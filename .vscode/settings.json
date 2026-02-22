@@ -1,0 +1,23 @@
+{
+	"python.defaultInterpreterPath": "/Users/timur/ngueu-pomoshnik/.venv/bin/python",
+	"python.pythonPath": "/Users/timur/ngueu-pomoshnik/.venv/bin/python",
+	"python.analysis.extraPaths": [
+		"/Users/timur/ngueu-pomoshnik/backend/bot"
+	],
+	"python.analysis.autoSearchPaths": true,
+	"python.analysis.typeCheckingMode": "basic",
+	"python.linting.enabled": true,
+	"python.linting.flake8Enabled": true,
+	"python.formatting.provider": "black",
+	"editor.formatOnSave": true,
+	"[python]": {
+		"editor.defaultFormatter": "ms-python.black-formatter"
+	},
+	"[javascript]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"python.testing.pytestArgs": [
+		"backend/tests"
+	],
+	"python.testing.pytestEnabled": true
+}
