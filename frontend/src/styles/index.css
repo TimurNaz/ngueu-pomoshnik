@@ -1,0 +1,7 @@
+/* Единая точка входа стилей: переменные → глобальные → компоненты */
+@import './variables.css';
+@import './global.css';
+@import './components/header.css';
+@import './components/section.css';
+@import './components/card.css';
+@import './components/footer.css';

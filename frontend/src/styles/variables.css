@@ -1,0 +1,17 @@
+/* Тема Telegram + запасные значения для браузера */
+:root {
+  --tg-bg: var(--tg-theme-bg-color, #f5f5f7);
+  --tg-text: var(--tg-theme-text-color, #1d1d1f);
+  --tg-hint: var(--tg-theme-hint-color, #86868b);
+  --tg-link: var(--tg-theme-link-color, #0066cc);
+  --tg-button: var(--tg-theme-button-color, #0066cc);
+  --tg-button-text: var(--tg-theme-button-text-color, #fff);
+  --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #fff);
+
+  --accent: #0a5f7a;
+  --accent-soft: rgba(10, 95, 122, 0.12);
+  --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --card-shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --radius: 14px;
+  --radius-sm: 10px;
+}

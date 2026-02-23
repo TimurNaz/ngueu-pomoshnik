@@ -33,3 +33,7 @@ DATABASE_URL: str = (
 
 # ── Redis ─────────────────────────────────────────────────────
 REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+
+# ── MiniApp (frontend) ────────────────────────────────────────
+# URL главной страницы MiniApp. Должен быть HTTPS. Для теста: разверни frontend и укажи сюда URL (например через ngrok).
+MINIAPP_URL: str = os.getenv("MINIAPP_URL", "https://yourdomain.com/miniapp")
