@@ -1,41 +1,60 @@
-import { useEffect, useState } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import Onboarding from './pages/Onboarding'
+import NewOrder from './pages/NewOrder'
+import Orders from './pages/Orders'
+import OrderDetail from './pages/OrderDetail'
+import FAQ from './pages/FAQ'
+import Profile from './pages/Profile'
 
-function App() {
-	const [isLoading, setIsLoading] = useState(true)
-	const [showOnboarding, setShowOnboarding] = useState(false)
-
-	// При загрузке приложения проверяем localStorage
-	useEffect(() => {
-		const completed = localStorage.getItem('onboardingCompleted')
-		setShowOnboarding(!completed)
-		setIsLoading(false)
-	}, [])
-
-	// Пока загружается - не показываем ничего
-	if (isLoading) {
-		return null
-	}
-
-	return (
-		<Routes>
-			{showOnboarding ? (
-				// Если онбординг не пройден, показываем его
-				<Route path='*' element={<Onboarding />} />
-			) : (
-				// Если онбординг пройден, показываем приложение
-				<>
-					<Route path='/' element={<Layout />}>
-						<Route index element={<Home />} />
-					</Route>
-					<Route path='*' element={<Navigate to='/' replace />} />
-				</>
-			)}
-		</Routes>
-	)
+function requireOnboarding(element) {
+  const done = localStorage.getItem('onboarding_done')
+  if (!done) return <Navigate to="/onboarding" replace />
+  return element
 }
 
-export default App
+const router = createBrowserRouter([
+  {
+    path: '/onboarding',
+    element: <Onboarding />,
+  },
+  {
+    path: '/',
+    element: <Layout />,
+    children: [
+      {
+        index: true,
+        element: requireOnboarding(<Home />),
+      },
+      {
+        path: 'new-order',
+        element: <NewOrder />,
+      },
+      {
+        path: 'orders',
+        element: <Orders />,
+      },
+      {
+        path: 'orders/:id',
+        element: <OrderDetail />,
+      },
+      {
+        path: 'faq',
+        element: <FAQ />,
+      },
+      {
+        path: 'profile',
+        element: <Profile />,
+      },
+    ],
+  },
+  {
+    path: '*',
+    element: <Navigate to="/" replace />,
+  },
+])
+
+export default function App() {
+  return <RouterProvider router={router} />
+}

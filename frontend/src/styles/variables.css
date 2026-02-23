@@ -1,17 +1,87 @@
-/* Тема Telegram + запасные значения для браузера */
+/* ============================================================
+   НГУЭУ Помощник — Design Tokens
+   Тема Telegram + токены проекта
+   ============================================================ */
 :root {
-  --tg-bg: var(--tg-theme-bg-color, #f5f5f7);
+  /* --- Telegram тема (с запасными значениями для браузера) --- */
+  --tg-bg: var(--tg-theme-bg-color, #f4f4f4);
   --tg-text: var(--tg-theme-text-color, #1d1d1f);
   --tg-hint: var(--tg-theme-hint-color, #86868b);
   --tg-link: var(--tg-theme-link-color, #0066cc);
-  --tg-button: var(--tg-theme-button-color, #0066cc);
+  --tg-button: var(--tg-theme-button-color, #0a5f7a);
   --tg-button-text: var(--tg-theme-button-text-color, #fff);
   --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #fff);
 
+  /* --- Фирменные цвета НГУЭУ Помощник --- */
   --accent: #0a5f7a;
-  --accent-soft: rgba(10, 95, 122, 0.12);
-  --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  --card-shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.08);
-  --radius: 14px;
+  --accent-dark: #084e65;
+  --accent-light: #4bc8e8;
+  --accent-soft: rgba(10, 95, 122, 0.10);
+
+  --green: #b7f34a;
+  --green-dark: #a3db2f;
+  --green-soft: rgba(183, 243, 74, 0.15);
+
+  --blue-gradient-start: #4bc8e8;
+  --blue-gradient-end: #5bd4f0;
+
+  /* --- Нейтральная палитра --- */
+  --bg: #f4f4f4;
+  --surface: #ffffff;
+  --surface-2: #f8f8f8;
+  --border: rgba(0, 0, 0, 0.08);
+  --text-primary: #1d1d1f;
+  --text-secondary: #555;
+  --text-muted: #999;
+  --text-hint: #86868b;
+
+  /* --- Статусы --- */
+  --status-new: #b7f34a;
+  --status-new-text: #0a5f7a;
+  --status-progress: #f9a825;
+  --status-progress-text: #7a4f00;
+  --status-done: #4bc8e8;
+  --status-done-text: #0a5f7a;
+  --status-canceled: #f44336;
+  --status-canceled-text: #fff;
+
+  /* --- Тени --- */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.10);
+  --shadow-accent: 0 6px 20px rgba(75, 200, 232, 0.18);
+  --shadow-green: 0 4px 12px rgba(183, 243, 74, 0.30);
+
+  /* --- Радиусы --- */
+  --radius-xs: 6px;
   --radius-sm: 10px;
+  --radius: 14px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
+
+  /* --- Отступы --- */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 20px;
+  --space-2xl: 24px;
+  --space-3xl: 32px;
+
+  /* --- Типографика --- */
+  --font-base: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 14px;
+  --font-size-base: 15px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 22px;
+  --font-size-3xl: 26px;
+
+  /* --- Анимации --- */
+  --transition: 0.2s ease;
+  --transition-bounce: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }

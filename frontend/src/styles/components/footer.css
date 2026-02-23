@@ -1,10 +1,7 @@
-.footer {
-  padding: 20px 0 8px;
-  text-align: center;
-}
-
-.footer__text {
-  font-size: 0.78rem;
-  color: var(--tg-hint);
-  margin: 0;
+/* ============================================================
+   Footer (нижний отступ для bottom-nav)
+   ============================================================ */
+.page-footer {
+  height: calc(68px + env(safe-area-inset-bottom, 0px));
+  flex-shrink: 0;
 }

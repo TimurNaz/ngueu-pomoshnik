@@ -1,0 +1,36 @@
+/* ============================================================
+   Badges / Status Pills
+   ============================================================ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.badge--new {
+  background: var(--status-new);
+  color: var(--status-new-text);
+}
+.badge--progress {
+  background: var(--status-progress);
+  color: var(--status-progress-text);
+}
+.badge--done {
+  background: var(--status-done);
+  color: var(--status-done-text);
+}
+.badge--canceled {
+  background: var(--status-canceled);
+  color: var(--status-canceled-text);
+}
+.badge--neutral {
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}

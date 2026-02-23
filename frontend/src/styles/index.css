@@ -1,7 +1,25 @@
 /* Единая точка входа стилей: переменные → глобальные → компоненты */
 @import './variables.css';
 @import './global.css';
+
+/* Компоненты Layout */
 @import './components/header.css';
-@import './components/section.css';
-@import './components/card.css';
 @import './components/footer.css';
+@import './components/nav.css';
+
+/* UI-компоненты */
+@import './components/button.css';
+@import './components/badge.css';
+@import './components/progress.css';
+@import './components/modal.css';
+@import './components/input.css';
+
+/* Онбординг */
+@import './components/onboarding.css';
+
+/* Страницы */
+@import './home/home.css';
+@import './home/order-form.css';
+@import './home/orders.css';
+@import './home/faq.css';
+@import './home/profile.css';
