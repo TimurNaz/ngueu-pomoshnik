@@ -1,40 +1,40 @@
-import { useNavigate } from 'react-router-dom'
-import Card from '../components/Card'
-import Section from '../components/Section'
+import { useState } from 'react'
+import ActionCards from '../components/home/ActionCards'
+import Blog from '../components/home/Blog'
+import BonusCard from '../components/home/BonusCard'
+import Footer from '../components/home/FooterBlocks'
+import Greeting from '../components/home/Greeting'
+import LogoBlock from '../components/home/LogoBlock'
+import OrderHistory from '../components/home/OrderHistory'
+import '../styles/home/home.css'
 
 export default function Home() {
-  const navigate = useNavigate()
+	const [userName] = useState('rockrizz')
 
-  return (
-    <>
-      <Section>
-        <Card
-          variant="primary"
-          icon="📋"
-          title="Подать заявку"
-          text="Курсовые, дипломы, рефераты. Оформите заказ за пару минут."
-          onClick={() => {
-            // TODO: navigate('/order') когда будет страница формы
-          }}
-        />
-      </Section>
+	return (
+		<div className='home'>
+			<div className='home__container'>
+				{/* Приветствие */}
+				<Greeting userName={userName} />
 
-      <Section title="Полезное">
-        <Card
-          variant="outline"
-          icon="⏱"
-          title="Этапы работы"
-          text="Заявка → исполнитель → выполнение → оплата"
-          small
-        />
-        <Card
-          variant="outline"
-          icon="💬"
-          title="Поддержка"
-          text="Вопросы? Пишите — мы на связи"
-          small
-        />
-      </Section>
-    </>
-  )
+				{/* Карта бонусов */}
+				<BonusCard />
+
+				{/* Две карточки действий */}
+				<ActionCards />
+
+				{/* История заявок */}
+				<OrderHistory />
+
+				{/* Блог */}
+				<Blog />
+
+				{/* Футер-блоки */}
+				<Footer />
+
+				{/* Логотип в конце */}
+				<LogoBlock />
+			</div>
+		</div>
+	)
 }
