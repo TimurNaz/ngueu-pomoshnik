@@ -1,0 +1,12 @@
+.section {
+  margin-bottom: 24px;
+}
+
+.section__title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tg-hint);
+  margin: 0 0 12px 10px;
+}

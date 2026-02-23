@@ -1,5 +1,7 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton,InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.types import WebAppInfo
+
+from config import MINIAPP_URL
 from keyboards.faq_data import faq_data
 
 def get_consent_keyboard():
@@ -103,16 +105,29 @@ def get_client_back():
     )
 
 def get_client_app_and_back():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Приложение", web_app=WebAppInfo(url="https://yourdomain.com/miniapp"))],
-        [InlineKeyboardButton(text="🔙 Назад", callback_data="go_back")]
-    ])
+    url = _miniapp_url()
+    if url:
+        return InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="Открыть приложение", web_app=WebAppInfo(url=url))],
+            [InlineKeyboardButton(text="🔙 Назад", callback_data="go_back")]
+        ])
+    return get_client_back()
+
+
+def _miniapp_url():
+    """Чистый HTTPS URL для MiniApp (без лишнего текста из ngrok)."""
+    raw = (MINIAPP_URL or "").strip().split()[0] if (MINIAPP_URL or "").strip() else ""
+    return raw if raw.startswith("https://") else ""
 
 
 def get_about_us_inline():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🌐 Наш сайт", url="https://yourdomain.com/promo")],
+    rows = []
+    app_url = _miniapp_url()
+    if app_url:
+        rows.append([InlineKeyboardButton(text="🌐 Открыть приложение", web_app=WebAppInfo(url=app_url))])
+    rows.extend([
         [InlineKeyboardButton(text="📸 Instagram", url="https://instagram.com/yourpage")],
         [InlineKeyboardButton(text="💬 Отзывы", url="https://t.me/your_feedback_channel")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="go_back")],
     ])
+    return InlineKeyboardMarkup(inline_keyboard=rows)

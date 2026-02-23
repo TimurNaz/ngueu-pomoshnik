@@ -1,0 +1,105 @@
+.card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin-bottom: 10px;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 56px;
+  /* сброс стилей кнопки в WebView (Telegram и др.), иначе карточка может не отображаться */
+  appearance: none;
+  -webkit-appearance: none;
+  overflow: visible;
+  background-color: transparent;
+}
+
+button.card {
+  font-size: inherit;
+  line-height: inherit;
+}
+
+button.card:not(.card--primary) {
+  background-color: var(--tg-secondary-bg);
+}
+
+.card:active {
+  transform: scale(0.98);
+}
+
+.card--primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: var(--card-shadow);
+}
+
+.card--primary .card__text {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.card--primary .card__arrow {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.2rem;
+}
+
+.card--outline {
+  background: var(--tg-secondary-bg);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: var(--card-shadow);
+}
+
+.card--outline:last-child,
+.card--small:last-child {
+  margin-bottom: 0;
+}
+
+.card__icon {
+  font-size: 1.75rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.card__icon--small {
+  font-size: 1.35rem;
+}
+
+.card__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.card__title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.01em;
+}
+
+.card__title--small {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.card__text {
+  font-size: 0.88rem;
+  margin: 0;
+  color: var(--tg-hint);
+  line-height: 1.4;
+}
+
+.card__text--muted {
+  font-size: 0.82rem;
+  color: var(--tg-hint);
+}
+
+.card__arrow {
+  flex-shrink: 0;
+  font-weight: 600;
+}
