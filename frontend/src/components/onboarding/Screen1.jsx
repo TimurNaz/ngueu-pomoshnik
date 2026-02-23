@@ -1,55 +1,26 @@
 export default function OnboardingScreen1() {
-	return (
-		<div className='onboarding-screen'>
-			<div className='onboarding-screen__content'>
-				{/* Наклонённая карточка с логотипом */}
-				<div className='onboarding-screen__hero'>
-					<div className='onboarding-screen__logo-card'>
-						<div className='onboarding-screen__logo-text'>НГУЭУ</div>
-						<div className='onboarding-screen__logo-subtitle'>Помощник</div>
-					</div>
-				</div>
-
-				{/* Основной текст */}
-				<div className='onboarding-screen__text-block'>
-					<h1 className='onboarding-screen__title'>Добро пожаловать!</h1>
-					<p className='onboarding-screen__description'>
-						Всё что нужно студентам НГУЭУ в одном месте
-					</p>
-				</div>
-			</div>
-
-			{/* Декоративные волны */}
-			<div className='onboarding-screen__waves'>
-				<svg viewBox='0 0 320 100' preserveAspectRatio='none'>
-					<defs>
-						<linearGradient
-							id='wave-gradient'
-							x1='0%'
-							y1='0%'
-							x2='100%'
-							y2='0%'
-						>
-							<stop
-								offset='0%'
-								style={{ stopColor: '#4BC8E8', stopOpacity: 1 }}
-							/>
-							<stop
-								offset='100%'
-								style={{ stopColor: '#B7F34A', stopOpacity: 1 }}
-							/>
-						</linearGradient>
-					</defs>
-					<path
-						d='M0,50 Q80,20 160,50 T320,50 L320,100 L0,100 Z'
-						fill='url(#wave-gradient)'
-					/>
-					<path
-						d='M0,60 Q80,30 160,60 T320,60 L320,100 L0,100 Z'
-						fill='rgba(183, 243, 74, 0.5)'
-					/>
-				</svg>
-			</div>
-		</div>
-	)
+  return (
+    <div className="onboarding-screen">
+      <div className="onboarding-screen__illustration">
+        <svg viewBox="0 0 200 200" className="onboarding-screen__svg">
+          <circle cx="100" cy="100" r="95" fill="#D6F4FB" />
+          {/* Диплом/документ */}
+          <rect x="55" y="55" width="90" height="110" rx="12" fill="#fff" />
+          <rect x="55" y="55" width="90" height="110" rx="12" fill="none" stroke="#4bc8e8" strokeWidth="2" />
+          <rect x="70" y="80" width="60" height="8" rx="4" fill="#4bc8e8" opacity="0.5" />
+          <rect x="70" y="96" width="45" height="6" rx="3" fill="#4bc8e8" opacity="0.3" />
+          <rect x="70" y="110" width="50" height="6" rx="3" fill="#4bc8e8" opacity="0.3" />
+          <rect x="70" y="124" width="38" height="6" rx="3" fill="#4bc8e8" opacity="0.3" />
+          {/* Звёздочка */}
+          <circle cx="145" cy="65" r="20" fill="#b7f34a" />
+          <text x="145" y="70" textAnchor="middle" fontSize="18">⭐</text>
+        </svg>
+      </div>
+      <span className="onboarding-screen__tag">🎓 НГУЭУ</span>
+      <h1 className="onboarding-screen__title">Учебные работы без стресса</h1>
+      <p className="onboarding-screen__description">
+        Курсовые, дипломы, рефераты и лабораторные — находим проверенного исполнителя под твою задачу.
+      </p>
+    </div>
+  )
 }

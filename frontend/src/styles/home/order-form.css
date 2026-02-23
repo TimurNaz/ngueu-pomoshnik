@@ -1,0 +1,206 @@
+/* ============================================================
+   Order Form Page — Подача заявки
+   ============================================================ */
+.order-form-page {
+  background: var(--bg);
+  min-height: 100vh;
+}
+
+.order-form-page__container {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Заголовок с иконкой */
+.order-form-hero {
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  border-radius: var(--radius-md);
+  padding: 24px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 6px 20px rgba(10, 95, 122, 0.2);
+}
+
+.order-form-hero__icon {
+  font-size: 40px;
+  flex-shrink: 0;
+}
+
+.order-form-hero__title {
+  font-size: var(--font-size-xl);
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  margin-bottom: 4px;
+}
+
+.order-form-hero__sub {
+  font-size: var(--font-size-sm);
+  color: rgba(255,255,255,0.8);
+  line-height: 1.4;
+}
+
+/* Блок формы */
+.form-card {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+
+.form-card__title {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.2px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+
+/* Тип работ — grid */
+.work-types {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.work-type-chip {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.work-type-chip:active {
+  transform: scale(0.97);
+}
+
+.work-type-chip.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Степень срочности */
+.urgency-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.urgency-chip {
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.urgency-chip.selected {
+  border-color: var(--green);
+  background: var(--green-soft);
+  color: var(--accent);
+}
+
+.urgency-chip:active {
+  transform: scale(0.96);
+}
+
+/* Итоговая карточка */
+.order-summary {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.order-summary__title {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-row__label {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.summary-row__value {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.summary-divider {
+  height: 1px;
+  background: var(--border);
+}
+
+.summary-row--total .summary-row__label {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.summary-row--total .summary-row__value {
+  font-size: var(--font-size-xl);
+  font-weight: 800;
+  color: var(--accent);
+}
+
+/* Заметки/предупреждение */
+.form-notice {
+  display: flex;
+  gap: 10px;
+  padding: 14px;
+  background: var(--green-soft);
+  border-radius: var(--radius);
+  border: 1px solid rgba(183, 243, 74, 0.3);
+}
+
+.form-notice__icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.form-notice__text {
+  font-size: var(--font-size-sm);
+  color: var(--accent);
+  font-weight: 500;
+  line-height: 1.5;
+}

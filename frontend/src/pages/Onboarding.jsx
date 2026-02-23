@@ -1,70 +1,62 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import OnboardingScreen1 from '../components/onboarding/Screen1'
-import OnboardingScreen2 from '../components/onboarding/Screen2'
-import OnboardingScreen3 from '../components/onboarding/Screen3'
-import OnboardingScreen4 from '../components/onboarding/Screen4'
-import '../styles/onboarding/onboarding.css'
+import Screen1 from '../components/onboarding/Screen1'
+import Screen2 from '../components/onboarding/Screen2'
+import Screen3 from '../components/onboarding/Screen3'
+import { useTelegram } from '../hooks/useTelegram'
+
+const SCREENS = [Screen1, Screen2, Screen3]
 
 export default function Onboarding() {
-	const navigate = useNavigate()
-	const [currentScreen, setCurrentScreen] = useState(0)
+  const [step, setStep] = useState(0)
+  const navigate = useNavigate()
+  const { haptic } = useTelegram()
 
-	const screens = [
-		<OnboardingScreen1 key={1} />,
-		<OnboardingScreen2 key={2} />,
-		<OnboardingScreen3 key={3} />,
-		<OnboardingScreen4 key={4} />,
-	]
+  function next() {
+    haptic('impact', 'light')
+    if (step < SCREENS.length - 1) {
+      setStep((s) => s + 1)
+    } else {
+      finish()
+    }
+  }
 
-	const handleNext = () => {
-		if (currentScreen < screens.length - 1) {
-			setCurrentScreen(currentScreen + 1)
-		} else {
-			// Сохраняем флаг, что онбординг пройден
-			localStorage.setItem('onboardingCompleted', 'true')
-			// Перезагружаем приложение для активации нового маршрута
-			window.location.href = '/'
-		}
-	}
+  function finish() {
+    localStorage.setItem('onboarding_done', '1')
+    navigate('/', { replace: true })
+  }
 
-	const handleSkip = () => {
-		// Сохраняем флаг при пропуске
-		localStorage.setItem('onboardingCompleted', 'true')
-		// Перезагружаем приложение для активации нового маршрута
-		window.location.href = '/'
-	}
+  const CurrentScreen = SCREENS[step]
+  const isLast = step === SCREENS.length - 1
 
-	return (
-		<div className='onboarding'>
-			<div className='onboarding__container'>
-				{screens[currentScreen]}
+  return (
+    <div className="onboarding">
+      <div className="onboarding__slides">
+        <CurrentScreen />
+      </div>
 
-				{/* Индикаторы */}
-				<div className='onboarding__indicators'>
-					{screens.map((_, index) => (
-						<div
-							key={index}
-							className={`onboarding__indicator ${
-								index === currentScreen ? 'onboarding__indicator--active' : ''
-							}`}
-							aria-label={`Экран ${index + 1}`}
-						/>
-					))}
-				</div>
+      {/* Индикаторы */}
+      <div className="onboarding__dots">
+        {SCREENS.map((_, i) => (
+          <div
+            key={i}
+            className={`onboarding__dot${i === step ? ' active' : ''}`}
+            onClick={() => i < step && setStep(i)}
+          />
+        ))}
+      </div>
 
-				{/* Кнопки */}
-				<div className='onboarding__controls'>
-					{currentScreen < screens.length - 1 && (
-						<button className='onboarding__skip' onClick={handleSkip}>
-							Пропустить
-						</button>
-					)}
-					<button className='onboarding__button' onClick={handleNext}>
-						{currentScreen === screens.length - 1 ? 'Начать' : 'Далее'}
-					</button>
-				</div>
-			</div>
-		</div>
-	)
+      {/* Действия */}
+      <div className="onboarding__actions">
+        <button className="btn btn--green" onClick={next}>
+          {isLast ? '🚀 Начать' : 'Далее →'}
+        </button>
+        {!isLast && (
+          <p className="onboarding__skip" onClick={finish}>
+            Пропустить
+          </p>
+        )}
+      </div>
+    </div>
+  )
 }
