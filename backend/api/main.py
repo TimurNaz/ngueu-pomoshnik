@@ -5,6 +5,11 @@ from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 from decimal import Decimal
+import logging
+
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Импорты из нашего проекта
 import sys
@@ -21,16 +26,14 @@ from services.db_service import UserService, OrderService, BonusService
 
 app = FastAPI(title="NGUEU Helper API", version="1.0.0")
 
-# Настройка CORS для MiniApp
+# Настройка CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # В продакшене заменить на конкретный домен
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# ── SCHEMAS ──────────────────────────────────────────────────
 
 class OrderCreate(BaseModel):
     client_id: int
@@ -40,7 +43,7 @@ class OrderCreate(BaseModel):
     teacher: Optional[str] = None
     requirements: Optional[str] = None
     antiplagiat_percent: Optional[int] = None
-    deadline: Optional[str] = None # Будет распарсено в datetime
+    deadline: Optional[str] = None
     urgency: Optional[str] = None
 
 class UserProfile(BaseModel):
@@ -51,8 +54,6 @@ class UserProfile(BaseModel):
     loyalty_level: str
     total_spent: float
 
-# ── ENDPOINTS ────────────────────────────────────────────────
-
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok", "timestamp": datetime.now()}
@@ -62,7 +63,6 @@ async def get_user_profile(user_id: int):
     user = await UserService.get_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
-    
     return {
         "id": user.id,
         "username": user.username,
@@ -75,11 +75,15 @@ async def get_user_profile(user_id: int):
 @app.post("/api/orders", status_code=status.HTTP_201_CREATED)
 async def create_order(order_data: OrderCreate):
     try:
-        # Парсим дату если она пришла
+        # Парсим дату
         deadline_dt = None
         if order_data.deadline:
-            deadline_dt = datetime.fromisoformat(order_data.deadline)
+            # Обработка разных форматов даты
+            date_str = order_data.deadline.replace('Z', '+00:00')
+            deadline_dt = datetime.fromisoformat(date_str)
             
+        logger.info(f"Создание заказа для {order_data.client_id}, срочность: {order_data.urgency}")
+        
         order = await OrderService.create(
             client_id=order_data.client_id,
             work_type=order_data.work_type,
@@ -89,18 +93,16 @@ async def create_order(order_data: OrderCreate):
             requirements=order_data.requirements,
             antiplagiat_percent=order_data.antiplagiat_percent,
             deadline=deadline_dt,
-            urgency=order_data.urgency
+            urgency=order_data.urgency # OrderService сам проведет маппинг теперь
         )
         return {"status": "success", "order_id": order.id}
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Ошибка при создании заказа")
+        logger.error(f"Ошибка в API при создании заказа: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/orders/client/{client_id}")
 async def get_client_orders(client_id: int):
-    orders = await OrderService.get_client_orders(client_id)
-    return orders
+    return await OrderService.get_client_orders(client_id)
 
 if __name__ == "__main__":
     import uvicorn

@@ -28,14 +28,12 @@ def upgrade() -> None:
         "referralstatus": "('pending', 'activated')",
         "holidaytarget": "('all', 'level_2', 'level_3', 'level_4')",
         "worktype": "('coursework', 'diploma', 'abstract', 'lab', 'practice', 'other')",
-        "urgencylevel": "('3d', '1w', '2w', '1m')"
+        "urgencylevel": "('three_days', 'one_week', 'two_weeks', 'one_month')"
     }
     
     for name, values in enums.items():
         op.execute(sa.text(f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = '{name}') THEN CREATE TYPE {name} AS ENUM {values}; END IF; END $$;"))
 
-    # ── 2. Облегчённые определения ENUM для таблиц (без создания) ──
-    # Используем postgresql.ENUM с create_type=False
     def pg_enum(name, *values):
         return postgresql.ENUM(*values, name=name, create_type=False)
 
@@ -99,7 +97,7 @@ def upgrade() -> None:
         sa.Column("requirements", sa.Text(), nullable=True),
         sa.Column("antiplagiat_percent", sa.Integer(), nullable=True),
         sa.Column("deadline", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("urgency", pg_enum("urgencylevel", "3d", "1w", "2w", "1m"), nullable=True),
+        sa.Column("urgency", pg_enum("urgencylevel", "three_days", "one_week", "two_weeks", "one_month"), nullable=True),
         sa.Column("status", pg_enum("orderstatus", "new", "assigned", "in_progress", "review", "done", "canceled"),
                   nullable=False, server_default="new"),
         sa.Column("step", sa.Integer(), nullable=False, server_default="0"),
@@ -230,7 +228,6 @@ def downgrade() -> None:
     op.drop_table("executor_profiles")
     op.drop_table("users")
 
-    # Удаляем ENUM типы
     for name in [
         "userrole", "loyaltylevel", "orderstatus", "paymentstatus",
         "paymentstage", "bonustype", "referralstatus", "holidaytarget",

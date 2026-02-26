@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTelegram } from '../hooks/useTelegram'
+import { API_BASE_URL } from '../config'
 
 const WORK_TYPES = [
   { id: 'coursework', label: '📊 Курсовая', emoji: '📊' },
@@ -36,7 +37,7 @@ export default function NewOrder() {
   const [step, setStep] = useState(1) // 1 = тип/тема, 2 = детали, 3 = итог
   const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
-  const { haptic } = useTelegram()
+  const { haptic, user } = useTelegram()
 
   function set(key, value) {
     setForm((f) => ({ ...f, [key]: value }))
@@ -70,10 +71,44 @@ export default function NewOrder() {
   async function submit() {
     haptic('notification', 'success')
     setSubmitting(true)
-    // TODO: POST /api/requests с form-данными
-    await new Promise((r) => setTimeout(r, 1200)) // Имитация запроса
-    setSubmitting(false)
-    navigate('/orders', { state: { newOrder: true } })
+    
+    // Берем ID пользователя из Telegram
+    const userId = user?.id || 927125510; // Фолбэк для тестов
+
+    const orderData = {
+      client_id: userId,
+      work_type: form.workType,
+      subject: form.subject,
+      topic: form.topic,
+      teacher: form.teacher || null,
+      requirements: form.requirements || null,
+      antiplagiat_percent: (form.antiplagiat && form.antiplagiat !== 'discuss') ? parseInt(form.antiplagiat) : null,
+      deadline: form.deadline ? new Date(form.deadline).toISOString() : null,
+      urgency: form.urgency
+    };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'bypass-tunnel-reminder': 'true',
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Ошибка: ${errorText}`);
+      }
+
+      setSubmitting(false)
+      navigate('/orders', { state: { newOrder: true } })
+    } catch (error) {
+      console.error('Submission error:', error);
+      alert('⚠️ Не удалось отправить заявку. Пожалуйста, попробуйте позже.');
+      setSubmitting(false)
+    }
   }
 
   const selectedType = WORK_TYPES.find((t) => t.id === form.workType)
