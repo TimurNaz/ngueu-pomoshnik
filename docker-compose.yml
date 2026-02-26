@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # 1. База данных PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: ngueu_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-ngueu_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # 2. FastAPI (Бэкенд)
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ngueu_api
+    restart: always
+    command: uvicorn backend.api.main:app --host 0.0.0.0 --port 8000
+    depends_on:
+      - db
+    environment:
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-ngueu_db}
+      - BOT_TOKEN=${BOT_TOKEN}
+    volumes:
+      # Пробрасываем папку с загрузками, чтобы файлы не удалялись при перезапуске
+      - ./backend/static/uploads:/app/backend/static/uploads
+
+  # 3. Aiogram (Telegram Бот)
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ngueu_bot
+    restart: always
+    command: python backend/bot/main.py
+    depends_on:
+      - db
+    environment:
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-ngueu_db}
+      - BOT_TOKEN=${BOT_TOKEN}
+
+  # 4. React (Фронтенд + Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ngueu_frontend
+    restart: always
+    ports:
+      - "3000:80" # Открываем порт 3000 наружу
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

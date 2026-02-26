@@ -98,6 +98,7 @@ def upgrade() -> None:
         sa.Column("antiplagiat_percent", sa.Integer(), nullable=True),
         sa.Column("deadline", sa.DateTime(timezone=True), nullable=True),
         sa.Column("urgency", pg_enum("urgencylevel", "three_days", "one_week", "two_weeks", "one_month"), nullable=True),
+        sa.Column("attachments", postgresql.ARRAY(sa.String()), nullable=False, server_default="{}"),
         sa.Column("status", pg_enum("orderstatus", "new", "assigned", "in_progress", "review", "done", "canceled"),
                   nullable=False, server_default="new"),
         sa.Column("step", sa.Integer(), nullable=False, server_default="0"),

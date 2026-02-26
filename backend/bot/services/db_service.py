@@ -145,35 +145,29 @@ class ReferralService:
 
 class OrderService:
     @staticmethod
-    async def create(client_id: int, work_type: str, subject: str, topic: str, teacher: Optional[str] = None, requirements: Optional[str] = None, antiplagiat_percent: Optional[int] = None, deadline: Optional[datetime] = None, urgency: Optional[str] = None) -> Order:
+    async def create(client_id: int, work_type: str, subject: str, topic: str, teacher: Optional[str] = None, requirements: Optional[str] = None, antiplagiat_percent: Optional[int] = None, deadline: Optional[datetime] = None, urgency: Optional[str] = None, attachments: Optional[list[str]] = None) -> Order:
         async with async_session() as session:
             try:
-                # МАППИНГ: фронт (короткие) -> база (длинные)
-                u_map = {
-                    "3d": "three_days", "three_days": "three_days",
-                    "1w": "one_week", "one_week": "one_week",
-                    "2w": "two_weeks", "two_weeks": "two_weeks",
-                    "1m": "one_month", "one_month": "one_month"
-                }
+                u_map = {"3d": "three_days", "three_days": "three_days", "1w": "one_week", "one_week": "one_week", "2w": "two_weeks", "two_weeks": "two_weeks", "1m": "one_month", "one_month": "one_month"}
                 clean_urgency = u_map.get(urgency, urgency)
-                
                 order = Order(
-                    client_id=client_id,
-                    work_type=work_type,
-                    subject=subject,
-                    topic=topic,
-                    teacher=teacher,
-                    requirements=requirements,
-                    antiplagiat_percent=antiplagiat_percent,
-                    deadline=deadline,
-                    urgency=clean_urgency,
-                    status=OrderStatus.new,
-                    step=0
+                    client_id=client_id, work_type=WorkType(work_type), subject=subject, topic=topic, teacher=teacher, requirements=requirements,
+                    antiplagiat_percent=antiplagiat_percent, deadline=deadline, urgency=clean_urgency, attachments=attachments or [],
+                    status=OrderStatus.new, step=0
                 )
                 session.add(order); await session.commit(); await session.refresh(order)
                 return order
             except Exception as e:
                 await session.rollback(); logger.error(f"Ошибка создания заявки: {e}"); raise
+
+    @staticmethod
+    async def cancel(order_id: int) -> Order:
+        async with async_session() as session:
+            order = await session.get(Order, order_id)
+            if order:
+                order.status = OrderStatus.canceled
+                await session.commit(); await session.refresh(order)
+            return order
 
     @staticmethod
     async def get_client_orders(client_id: int, status: Optional[str] = None, limit: int = 20) -> list[Order]:

@@ -167,6 +167,7 @@ class Order(Base):
     antiplagiat_percent = Column(Integer, nullable=True)
     deadline           = Column(DateTime(timezone=True), nullable=True)
     urgency            = Column(Enum(UrgencyLevel, name="urgencylevel"), nullable=True)
+    attachments        = Column(ARRAY(String), nullable=False, server_default="{}")
     status = Column(Enum(OrderStatus, name="orderstatus"), nullable=False, default=OrderStatus.new)
     step   = Column(Integer, nullable=False, default=0)
     price            = Column(Numeric(12, 2), nullable=True)
