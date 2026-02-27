@@ -11,12 +11,17 @@ echo "🚀 Начинаю деплой ветки [$BRANCH] на сервер $S
 # 1. Сохраняем и пушим код
 echo "📦 Шаг 1: Пуш кода в GitLab..."
 git add .
-read -p "Введите сообщение коммита: " message
-if [ -z "$message" ]; then
-  message="Auto-deploy $(date +'%Y-%m-%d %H:%M:%S')"
+if ! git diff-index --quiet HEAD --; then
+    read -p "Введите сообщение коммита: " message
+    if [ -z "$message" ]; then
+      message="Auto-deploy $(date +'%Y-%m-%d %H:%M:%S')"
+    fi
+    git commit -m "$message"
+    git push origin $BRANCH
+else
+    echo "Код не изменился, пропускаю commit."
+    git push origin $BRANCH
 fi
-git commit -m "$message"
-git push origin $BRANCH
 
 if [ $? -ne 0 ]; then
     echo "❌ Ошибка при пуше в GitLab. Деплой прерван."
@@ -26,11 +31,12 @@ fi
 # 2. Обновляем сервер по SSH
 echo "🌐 Шаг 2: Обновление сервера..."
 ssh -t $SERVER_USER@$SERVER_IP "
-    cd $PROJECT_PATH && 
-    git fetch origin && 
-    git checkout $BRANCH && 
-    git pull origin $BRANCH && 
-    docker-compose up -d --build
+    cd $PROJECT_PATH && \
+    git config --global credential.helper store && \
+    git fetch origin && \
+    git checkout $BRANCH && \
+    git pull origin $BRANCH && \
+    docker compose up -d --build
 "
 
 if [ $? -eq 0 ]; then
