@@ -7,8 +7,8 @@ WORKDIR /app
 # Устанавливаем системные зависимости, нужные для PostgreSQL и сборки
 RUN apt-get update && apt-get install -y gcc libpq-dev && rm -rf /var/lib/apt/lists/*
 
-# Копируем файл зависимостей
-COPY requirements.txt .
+# Копируем файл зависимостей и конфиг миграций
+COPY requirements.txt alembic.ini ./
 
 # Устанавливаем зависимости
 RUN pip install --no-cache-dir -r requirements.txt
