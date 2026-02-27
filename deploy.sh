@@ -5,6 +5,7 @@ SERVER_IP="158.160.202.185"
 SERVER_USER="ubuntu"
 PROJECT_PATH="/app/ngueu-pomoshnik"
 BRANCH=$(git branch --show-current)
+GITLAB_URL="https://TimurNaz:glpat-2nzgvYJm4efefRbtbXwbT286MQp1OmtzeGhoCw.01.120bzp8gb@gitlab.com/TimurNaz/ngueu-pomoshnik.git"
 
 echo "🚀 Начинаю деплой ветки [$BRANCH] на сервер $SERVER_IP..."
 
@@ -20,19 +21,18 @@ if ! git diff-index --quiet HEAD --; then
     git push origin $BRANCH
 else
     echo "Код не изменился, пропускаю commit."
-    git push origin $BRANCH
 fi
 
 if [ $? -ne 0 ]; then
-    echo "❌ Ошибка при пуше в GitLab. Деплой прерван."
-    exit 1
+    echo "❌ Ошибка при пуше в GitLab."
+    # Не выходим, пробуем обновить сервер всё равно
 fi
 
 # 2. Обновляем сервер по SSH
 echo "🌐 Шаг 2: Обновление сервера..."
 ssh -t $SERVER_USER@$SERVER_IP "
     cd $PROJECT_PATH && \
-    git config --global credential.helper store && \
+    git remote set-url origin $GITLAB_URL && \
     git fetch origin && \
     git checkout $BRANCH && \
     git pull origin $BRANCH && \
@@ -41,7 +41,6 @@ ssh -t $SERVER_USER@$SERVER_IP "
 
 if [ $? -eq 0 ]; then
     echo "✅ ДЕПЛОЙ УСПЕШНО ЗАВЕРШЕН!"
-    echo "Бот и API работают 24/7 по адресу сервера."
 else
     echo "❌ Произошла ошибка при обновлении сервера."
 fi
