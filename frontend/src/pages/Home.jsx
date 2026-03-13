@@ -1,37 +1,65 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTelegram } from '../hooks/useTelegram'
 import StatusBadge from '../components/ui/StatusBadge'
-
-// Mock данные для демонстрации — заменить на API-запросы
-const MOCK_ORDERS = [
-  {
-    id: 'ORD-001',
-    title: 'Курсовая по экономике',
-    status: 'in_progress',
-    date: '20 фев',
-    price: '3 500 ₽',
-    icon: '📊',
-  },
-  {
-    id: 'ORD-002',
-    title: 'Лабораторная по ИТ',
-    status: 'done',
-    date: '15 фев',
-    price: '1 800 ₽',
-    icon: '💻',
-  },
-]
+import { API_BASE_URL } from '../config'
 
 export default function Home() {
   const navigate = useNavigate()
   const { user, haptic } = useTelegram()
+  const [profile, setProfile] = useState(null)
+  const [latestOrders, setLatestOrders] = useState([])
+  const [loading, setLoading] = useState(true)
 
+  const userId = user?.id || 927125510;
   const displayName = user?.first_name ?? 'Студент'
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const headers = { 'bypass-tunnel-reminder': 'true' };
+        
+        // Загружаем профиль
+        const profRes = await fetch(`${API_BASE_URL}/api/users/${userId}`, { headers });
+        if (profRes.ok) {
+          const profData = await profRes.json();
+          setProfile(profData);
+        }
+
+        // Загружаем последние заявки
+        const ordersRes = await fetch(`${API_BASE_URL}/api/orders/latest/${userId}`, { headers });
+        if (ordersRes.ok) {
+          const ordersData = await ordersRes.json();
+          setLatestOrders(ordersData);
+        }
+      } catch (err) {
+        console.error('Home data fetch error:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [userId]);
 
   function handleAction(path) {
     haptic('impact', 'light')
     navigate(path)
   }
+
+  const getWorkIcon = (type) => {
+    const icons = { coursework: '📊', diploma: '🎓', abstract: '📄', lab: '🔬', practice: '🏢' };
+    return icons[type] || '📌';
+  };
+
+  const getLoyaltyBadge = (level) => {
+    const levels = {
+      novice: '🌱 Новичок',
+      student: '🎓 Студент',
+      regular: '⭐ Постоянный',
+      vip: '👑 VIP'
+    };
+    return levels[level] || '🌱 Новичок';
+  };
 
   return (
     <div className="home">
@@ -54,11 +82,15 @@ export default function Home() {
               <p className="bonus-card__label">Бонусные баллы</p>
               <p className="bonus-card__brand">НГУЭУ/Помощник</p>
             </div>
-            <span className="bonus-card__badge">🎓 Студент</span>
+            <span className="bonus-card__badge">
+              {profile ? getLoyaltyBadge(profile.loyalty_level) : 'Загрузка...'}
+            </span>
           </div>
 
           <div className="bonus-card__amount">
-            <div className="bonus-card__number">320</div>
+            <div className="bonus-card__number">
+              {profile ? Math.floor(profile.bonus_balance) : '0'}
+            </div>
             <div className="bonus-card__unit">баллов накоплено</div>
           </div>
 
@@ -69,7 +101,7 @@ export default function Home() {
             >
               Профиль →
             </button>
-            <span className="bonus-card__id">#{user?.id ?? '000000'}</span>
+            <span className="bonus-card__id">#{userId}</span>
           </div>
         </div>
 
@@ -110,7 +142,7 @@ export default function Home() {
 
           <button
             className="action-card action-card--light"
-            onClick={() => window.open('https://t.me/ngueu_helper_bot', '_blank')}
+            onClick={() => window.open('https://t.me/ngueu_bot_support', '_blank')}
           >
             <span className="action-card__icon">🎧</span>
             <div className="action-card__content">
@@ -121,7 +153,7 @@ export default function Home() {
         </div>
 
         {/* Превью заявок */}
-        {MOCK_ORDERS.length > 0 && (
+        {!loading && latestOrders.length > 0 && (
           <div className="orders-preview">
             <div className="orders-preview__header">
               <span className="orders-preview__title">Последние заявки</span>
@@ -133,19 +165,21 @@ export default function Home() {
               </button>
             </div>
 
-            {MOCK_ORDERS.map((order) => (
+            {latestOrders.map((order) => (
               <div
                 key={order.id}
                 className="order-row"
                 onClick={() => handleAction(`/orders/${order.id}`)}
               >
-                <div className="order-row__icon">{order.icon}</div>
+                <div className="order-row__icon">{getWorkIcon(order.work_type)}</div>
                 <div className="order-row__content">
-                  <p className="order-row__name">{order.title}</p>
-                  <p className="order-row__meta">{order.date}</p>
+                  <p className="order-row__name">{order.subject}</p>
+                  <p className="order-row__meta">{new Date(order.created_at).toLocaleDateString()}</p>
                 </div>
                 <div className="order-row__right">
-                  <span className="order-row__price">{order.price}</span>
+                  <span className="order-row__price">
+                    {order.price ? `${Math.floor(order.price)} ₽` : 'Цена...'}
+                  </span>
                   <StatusBadge status={order.status} />
                 </div>
               </div>

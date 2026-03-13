@@ -1,287 +1,178 @@
-# 🔍 НГУЭУ Помощник — Чек-лист по завершённости Backend
+# BACKEND CHECKLIST — НГУЭУ Помощник
 
-> **Дата анализа:** 23.02.2026  
-> **Стек:** Python 3, aiogram 3, FastAPI, SQLAlchemy (async), PostgreSQL, Redis, YooKassa  
-> **Описание проекта:** Telegram-бот для помощи студентам НГУЭУ (заказы курсовых, дипломов и т.д.)
+> Обновлено: 27 февраля 2026 г.
 
 ---
 
-## 📊 Общая сводка
+## 1. Конфигурация и окружение
 
-| Категория | Статус | Прогресс |
-|---|---|---|
-| Структура проекта | ⚠️ Частично | ~30% |
-| Telegram-бот (aiogram) | ⚠️ Частично | ~50% |
-| База данных | ⚠️ Частично | ~25% |
-| REST API (FastAPI) | ❌ Не начато | 0% |
-| AI-ассистент | ❌ Не начато | 0% |
-| Оплата (YooKassa) | ❌ Не начато | 0% |
-| Кэширование (Redis) | ❌ Не начато | 0% |
-| Тесты | ❌ Не начато | 0% |
-| Инфраструктура (Docker) | ❌ Не начато | 0% |
-| Документация | ❌ Не начато | 0% |
+| Элемент | Статус | Комментарий |
+|---------|--------|-------------|
+| `.env` файл | ✅ Готово | `BOT_TOKEN`, `DB_*`, `MINIAPP_URL` настроены |
+| `config.py` — валидация переменных | ✅ Готово | `_require_env()`, `sys.exit(1)` при отсутствии |
+| `config.py` — `MINIAPP_URL` | ✅ Готово | Поддержка ngrok URL |
+| `requirements.txt` | ✅ Готово | aiogram 3.25, SQLAlchemy, FastAPI, Alembic и др. |
+| `.gitignore` | ✅ Готово | Все основные паттерны |
+| `.vscode/settings.json` | ✅ Готово | Интерпретатор `.venv`, extraPaths |
+| `pyrightconfig.json` | ✅ Готово | Для Pylance |
 
 ---
 
-## 1. 📂 Структура проекта
+## 2. База данных — Модели (`db/models.py`)
 
-### Созданные директории
-- [x] `backend/` — корневая папка backend
-- [x] `backend/bot/` — Telegram-бот (основной код)
-- [x] `backend/bot/handlers/` — обработчики сообщений
-- [x] `backend/bot/keyboards/` — клавиатуры и inline-кнопки
-- [x] `backend/bot/db/` — слой базы данных
-- [x] `backend/bot/services/` — сервисный слой
-- [x] `backend/bot/states/` — FSM-состояния
-- [x] `backend/bot/middlewares/` — middleware (⚠️ пустая)
-- [x] `backend/bot/utils/` — утилиты бота (⚠️ пустая)
+| Модель | Статус | Строк | Связи |
+|--------|--------|-------|-------|
+| `User` | ✅ Готово | ~45 | role, loyalty, бонусы, referral, timestamps |
+| `ExecutorProfile` | ✅ Готово | ~25 | 1:1 с User, специализации, рейтинг |
+| `Order` | ✅ Готово | ~45 | client → User, executor → User, финансы, прогресс |
+| `Payment` | ✅ Готово | ~25 | order → Order, user → User, YooKassa ID |
+| `BonusTransaction` | ✅ Готово | ~20 | user → User, order → Order |
+| `Referral` | ✅ Готово | ~20 | referrer → User, referred → User |
+| `Review` | ✅ Готово | ~20 | order → Order, NPS score |
+| `HolidayBonus` | ✅ Готово | ~15 | target levels, trigger date |
+| `KnowledgeBase` | ✅ Готово | ~20 | teacher, dept, author → User |
 
-### Пустые директории (запланированы, но не реализованы)
-- [ ] `backend/api/` — REST API (FastAPI) — **пустая**
-- [ ] `backend/models/` — общие модели — **пустая**
-- [ ] `backend/ai_assistant/` — AI-помощник — **пустая**
-- [ ] `backend/utils/` — общие утилиты — **пустая**
-- [ ] `backend/tests/` — тесты — **пустая**
-- [ ] `backend/migrations/` — миграции Alembic — **пустая**
+**Enums**: `UserRole`, `LoyaltyLevel`, `OrderStatus`, `PaymentStatus`, `PaymentStage`, `BonusType`, `ReferralStatus`, `HolidayTarget`, `WorkType`, `UrgencyLevel` — все 10 определены.
+
+**Бизнес-константы**: `LOYALTY_THRESHOLDS`, `CASHBACK_RATES`, `REGISTRATION_BONUS` (500₽), `REFERRAL_BONUS` (100₽), `COMMISSION_RATE` (10%), `MAX_BONUS_RATIO` (50%).
 
 ---
 
-## 2. 🤖 Telegram-бот (aiogram 3)
+## 3. База данных — Инфраструктура
 
-### Точка входа (`bot/main.py`)
-- [x] Загрузка `.env` и токена
-- [x] Инициализация `Bot` и `Dispatcher`
-- [x] Подключение роутеров (`common`, `client`, `executor`, `admin`)
-- [x] FSM Storage (`MemoryStorage`)
-- [x] Запуск polling
-- [ ] ~~Redis для FSM Storage~~ (закомментировано)
-- [ ] Graceful shutdown
-- [ ] Webhook-режим (для production)
-
-### Конфигурация (`bot/config.py`)
-- [x] Загрузка переменных из `.env`
-- [x] Формирование `DATABASE_URL`
-- [ ] Валидация обязательных переменных
-- [ ] Настройки для Redis, YooKassa, AI
-
-> [!WARNING]
-> Токен загружается по-разному: в `main.py` — `TOKEN`, в `config.py` — `BOT_TOKEN`. Используется разные имена переменных, хотя это одно и то же значение.
-
-### Хендлеры
-
-#### `handlers/common.py` — ✅ Базовые (готов)
-- [x] `/start` — приветствие с фото + запрос согласия
-- [x] Обработка "✅ Согласен" — создание пользователя в БД
-- [x] Обработка "❌ Не согласен" — отказ
-- [x] `go_back` callback — кнопка "Назад"
-
-#### `handlers/client.py` — ⚠️ Клиентские (частично)
-- [x] "Личный кабинет" — заглушка с MiniApp ссылкой
-- [x] "О нас" — информация + inline-ссылки
-- [x] "Этапы работы" — описание процесса
-- [x] "FAQ" — категории + вопросы + ответы
-- [x] "Час с поддержкой" — заглушка
-- [x] "Отзывы" — заглушка
-- [x] "Стать исполнителем" — заглушка
-- [ ] Подача заявки через MiniApp (нет реального MiniApp)
-- [ ] Личный кабинет — просмотр заказов, статусов
-- [ ] Чат с поддержкой — AI-ассистент или live-чат
-- [ ] Система отзывов — отправка/просмотр реальных отзывов
-- [ ] Реферальная программа — логика
-
-#### `handlers/executor.py` — ❌ Исполнитель (заглушка)
-- [x] Кабинет исполнителя — отображение заглушки
-- [ ] Просмотр доступных заказов
-- [ ] Принятие/отклонение заказа
-- [ ] Отметка о выполнении
-- [ ] Просмотр истории и оплат
-
-#### `handlers/admin.py` — ❌ Админ-панель (заглушка)
-- [x] Панель администратора — отображение заглушки
-- [ ] Просмотр/фильтрация заявок
-- [ ] Назначение исполнителей
-- [ ] Контроль выполнения
-- [ ] Статистика и отчёты
-- [ ] Управление пользователями
-
-### Клавиатуры (`keyboards/`)
-- [x] `get_consent_keyboard()` — кнопки согласия
-- [x] `get_start_keyboard()` — главное меню
-- [x] `get_faq_menu()` — категории FAQ
-- [x] `get_faq_questions(topic)` — вопросы по теме
-- [x] `get_client_back()` — кнопка "Назад"
-- [x] `get_client_app_and_back()` — MiniApp + Назад
-- [x] `get_about_us_inline()` — ссылки "О нас"
-- [ ] Клавиатуры для исполнителя
-- [ ] Клавиатуры для администратора
-
-> [!WARNING]
-> В `keyboards/client.py` (строки 111-117) висит "потерянное" выражение `InlineKeyboardMarkup(...)` — не присвоено переменной и не используется.
-
-### FSM-состояния (`states/`)
-- [x] `ConsentState.awaiting_consent`
-- [ ] Состояния оформления заказа
-- [ ] Состояния чата с поддержкой
-- [ ] Состояния для исполнителя
-
-### FAQ-данные (`keyboards/faq_data.py`)
-- [x] 9 категорий FAQ с вопросами и ответами (27 пар)
+| Элемент | Статус | Комментарий |
+|---------|--------|-------------|
+| `database.py` — движок, сессия, Base | ✅ Готово | `asyncpg`, `AsyncSession` |
+| `init_db.py` — создание таблиц | ✅ Готово | `Base.metadata.create_all` |
+| `alembic.ini` | ✅ Готово | `script_location = backend/migrations` |
+| `backend/migrations/env.py` | ✅ Готово | Async-миграции, `.env` загрузка |
+| `backend/migrations/versions/001_initial.py` | ✅ Готово | 311 строк, все 9 таблиц + 10 ENUM + индексы |
+| `db/redis.py` | ⚠️ Заглушка | Весь код закомментирован |
 
 ---
 
-## 3. 🗄️ База данных
+## 4. Сервисный слой (`services/`)
 
-### Подключение (`db/database.py`)
-- [x] Async engine (`create_async_engine`)
-- [x] Async session maker
-- [x] `Base` (declarative_base)
-- [x] `get_db()` — генератор сессии
-
-### Модели (`db/models.py`)
-- [x] `User` — id (BigInteger), username (String), role (Enum)
-- [x] `UserRole` — client / executor / admin
-- [ ] Модель `Order` (заказ)
-- [ ] Модель `Payment` (оплата)
-- [ ] Модель `Review` (отзыв)
-- [ ] Модель `Referral` (реферальная система)
-- [ ] Модель `Message` / `SupportTicket` (поддержка)
-- [ ] Timestamps (`created_at`, `updated_at`) на всех моделях
-
-### Инициализация (`db/init_db.py`)
-- [x] Скрипт создания таблиц через `create_all`
-- [ ] Не вызывается автоматически при старте бота
-
-> [!CAUTION]
-> В `init_db.py` конфликт импортов: `from database import engine` (без префикса `db.`) и `from db.models import Base` (с префиксом). Это приведёт к ошибке при запуске.
-
-### Redis (`db/redis.py`)
-- [ ] Весь код **закомментирован**
-- [ ] Не подключён к боту
-
-### Миграции (Alembic)
-- [ ] `alembic.ini` — **пустой файл**
-- [ ] `backend/migrations/` — **пустая директория**
-- [ ] Миграции не настроены
+| Сервис | Статус | Файл | Методы |
+|--------|--------|------|--------|
+| `UserService` | ✅ Готово | `db_service.py` | `get_or_create`, `get_by_id`, `get_by_referral_code`, `update_loyalty`, `get_referral_link`, `get_referral_stats` |
+| `BonusService` | ✅ Готово | `db_service.py` | `add`, `spend`, `apply_cashback`, `get_history` |
+| `ReferralService` | ✅ Готово | `db_service.py` | `activate_if_first_purchase` |
+| `OrderService` | ✅ Готово | `db_service.py` | `create`, `assign_executor`, `start_work`, `send_for_review`, `complete`, `cancel`, `get_client_orders`, `get_by_id` |
+| `HolidayService` | ✅ Готово | `db_service.py` | `create`, `send_pending` |
+| `ReviewService` | ✅ Готово | `db_service.py` | `create`, `get_published` |
+| Обратная совместимость | ✅ Готово | `user_service.py` | Обёртка для старых handlers |
 
 ---
 
-## 4. ⚙️ Сервисный слой
+## 5. Бот — Хендлеры (`handlers/`)
 
-### `services/user_service.py`
-- [x] `get_or_create_user(user_id, username)` — работает
-- [ ] Обновление данных пользователя
-- [ ] Управление ролями
-- [ ] Сервис заказов
-- [ ] Сервис оплаты
-- [ ] Сервис уведомлений
-
-> [!NOTE]
-> В `user_service.py` ошибки логируются через `print()` вместо `logger`. Нет `await session.rollback()` при ошибке.
+| Хендлер | Статус | Функционал |
+|---------|--------|------------|
+| `common.py` | ✅ Готово | `/start`, согласие, go_back |
+| `client.py` | ✅ Готово | Меню: ЛК, О нас, Этапы, FAQ (9 тем), Отзывы, Поддержка, Стать исполнителем |
+| `executor.py` | ⚠️ Заглушка | Только стаб «В разработке» |
+| `admin.py` | ⚠️ Заглушка | Только стаб «В разработке» |
 
 ---
 
-## 5. 🌐 REST API (FastAPI)
+## 6. Бот — Клавиатуры (`keyboards/`)
 
-- [ ] `backend/api/` — **полностью пустая**
-- [ ] Эндпоинты для MiniApp
-- [ ] Эндпоинты для фронтенда
-- [ ] Webhook для YooKassa
-- [ ] Webhook для Telegram (production)
-- [ ] Аутентификация / авторизация
-- [ ] Валидация данных (Pydantic-схемы)
-
----
-
-## 6. 🧠 AI-ассистент
-
-- [ ] `backend/ai_assistant/` — **полностью пустая**
-- [ ] Выбор AI-провайдера (OpenAI / GigaChat / другой)
-- [ ] Интеграция с ботом
-- [ ] Контекст и промпт-инжиниринг
-- [ ] Ограничения и rate-limiting
+| Элемент | Статус | Комментарий |
+|---------|--------|-------------|
+| `client.py` — основные клавиатуры | ✅ Готово | Consent, Start, FAQ, Back, About |
+| `client.py` — MiniApp кнопка | ✅ Готово | `WebAppInfo` + `_miniapp_url()` |
+| `faq_data.py` — данные FAQ | ✅ Готово | 9 категорий вопросов |
+| Картинки в Yandex Cloud | ✅ Готово | Все URL актуальны |
 
 ---
 
-## 7. 💳 Оплата (YooKassa)
+## 7. Frontend (MiniApp)
 
-- [ ] Пакет `yookassa` в `requirements.txt`, но не используется
-- [ ] Создание платежа
-- [ ] Webhook для подтверждения
-- [ ] Обработка возвратов
-- [ ] Статусы оплаты заказов
-
----
-
-## 8. 🧪 Тестирование
-
-- [ ] `backend/tests/` — **полностью пустая**
-- [ ] `pytest` в `requirements.txt`, но тестов нет
-- [ ] Unit-тесты для сервисов
-- [ ] Unit-тесты для handlers
-- [ ] Интеграционные тесты для DB
-- [ ] Тесты для API
+| Элемент | Статус | Комментарий |
+|---------|--------|-------------|
+| Vite + React | ✅ Готово | `frontend/` с `vite.config.js` |
+| Компоненты (`src/components/`) | ✅ Готово | 8 компонентов |
+| Страницы (`src/pages/`) | ✅ Готово | 7 страниц |
+| Стили (`src/styles/`) | ✅ Готово | 17 CSS-файлов |
+| `CLAUDE.md` | ✅ Есть | Инструкции для AI |
+| Деплой | ⚠️ Через ngrok | Нет постоянного хостинга |
 
 ---
 
-## 9. 🐳 Инфраструктура
+## 8. Инфраструктура
 
-### Docker
-- [ ] `Dockerfile` — **пустой файл**
-- [ ] `docker-compose.yml` — **пустой файл**
-- [ ] Контейнеризация бота
-- [ ] Контейнеризация PostgreSQL
-- [ ] Контейнеризация Redis
-
-### CI/CD
-- [ ] GitHub Actions / GitLab CI
-- [ ] Линтинг (`black`, `flake8` в requirements, но не настроены)
-- [ ] Авто-деплой
-
-### `.env` и конфигурация
-- [x] `.env` файл существует
-- [ ] `.env.example` — шаблон для других разработчиков  
-- [ ] Секреты не хардкодятся
-
-> [!WARNING]
-> `.gitignore` записан в одну строку — паттерны не разделены переносами строк, что может привести к неправильной работе.
+| Элемент | Статус | Комментарий |
+|---------|--------|-------------|
+| `Dockerfile` | ❌ Пустой | Нужно написать |
+| `docker-compose.yml` | ❌ Пустой | Нужно написать |
+| `README.md` | ❌ Пустой | Нужно написать документацию |
+| CI/CD | ❌ Нет | Нет GitHub Actions / pipeline |
 
 ---
 
-## 10. 📝 Документация
+## 9. Пустые директории (заготовки)
 
-- [ ] `README.md` — **пустой файл**
-- [ ] Инструкция по установке
-- [ ] Описание архитектуры
-- [ ] API-документация
-- [ ] Гайд для разработчиков
-
----
-
-## 11. 🐛 Выявленные проблемы
-
-| # | Проблема | Файл | Статус |
-|---|---|---|---|
-| 1 | Разное имя переменной токена (`TOKEN` vs `BOT_TOKEN`) | `main.py` / `config.py` | ✅ Исправлено |
-| 2 | "Потерянный" `InlineKeyboardMarkup` (строки 111-117) | `keyboards/client.py` | ✅ Исправлено |
-| 3 | Конфликт импортов в `init_db.py` | `db/init_db.py` | ✅ Исправлено |
-| 4 | `print()` вместо `logger` | `services/user_service.py` | ✅ Исправлено |
-| 5 | Нет `session.rollback()` при ошибке | `services/user_service.py` | ✅ Исправлено |
-| 6 | `.gitignore` в одну строку | `.gitignore` | ✅ Исправлено |
-| 7 | Placeholder URL-ы (`yourdomain.com`, `yourpage`) | `keyboards/client.py` | ⚠️ Нужны реальные URL |
-| 8 | `MemoryStorage` для FSM (данные теряются при перезапуске) | `main.py` | ✅ TODO добавлен |
-| 9 | Нет валидации env-переменных в `config.py` | `config.py` | ✅ Исправлено |
+| Директория | Назначение | Статус |
+|-----------|------------|--------|
+| `backend/api/` | FastAPI REST API | ❌ Пустая |
+| `backend/ai_assistant/` | AI-помощник | ❌ Пустая |
+| `backend/models/` | Pydantic-схемы для API | ❌ Пустая |
+| `backend/utils/` | Общие утилиты | ❌ Пустая |
+| `backend/tests/` | Тесты | ❌ Пустая |
+| `db_layer/` | Неизвестно (только .DS_Store) | ❌ Можно удалить |
 
 ---
 
-## 📈 Рекомендуемый порядок работы
+## 10. Найденные баги и проблемы
 
-1. **🔧 Исправить баги** — устранить выявленные проблемы (таблица выше)
-2. **🗄️ База данных** — добавить модели `Order`, `Payment`, `Review` + настроить Alembic
-3. **⚙️ Сервисы** — реализовать бизнес-логику заказов и оплаты
-4. **🤖 Хендлеры** — реализовать реальный функционал executor и admin
-5. **🌐 FastAPI** — создать API для MiniApp и webhook'ов
-6. **💳 YooKassa** — интегрировать оплату
-7. **🧠 AI** — подключить AI-ассистента
-8. **🐳 Docker** — контейнеризировать проект
-9. **🧪 Тесты** — покрыть основные сценарии
-10. **📝 Документация** — написать README и API-документацию
+| # | Проблема | Критичность | Файл |
+|---|---------|-------------|------|
+| 1 | **Дубль `migrations/`** — существует и `backend/migrations/` и корневой `migrations/`. `alembic.ini` ссылается на `backend/migrations`. Корневой `migrations/` — лишний | 🟡 Средняя | `/migrations/` |
+| 2 | **Placeholder URLs** — `instagram.com/yourpage` и `t.me/your_feedback_channel` в `keyboards/client.py` | 🟡 Средняя | `keyboards/client.py:129-130` |
+| 3 | **Executor/Admin картинки** — `imgur.com` ссылки в хендлерах (остальные на Yandex Cloud) | 🟢 Низкая | `executor.py:10`, `admin.py:10` |
+| 4 | **`env.py` содержит `EOF`** — последняя строка файла содержит текст `EOF` | 🟡 Средняя | `backend/migrations/env.py:74` |
+| 5 | **`redis.py` полностью закомментирован** — весь файл-заглушка | 🟢 Низкая | `db/redis.py` |
+| 6 | **`WorkType` определён дважды** — и в `models.py` (строка 220) и в Enum в `001_initial.py` — потенциальная рассинхронизация при изменении | 🟢 Информация | — |
+| 7 | **Нет модели `notifications`** — упоминается в FAQ/функционале, но модели нет | 🟢 Информация | — |
+
+---
+
+## 11. Рекомендуемые следующие шаги (приоритет)
+
+### Высокий приоритет
+1. **Реализовать хендлеры исполнителя** — подключить `OrderService` к `executor.py`
+2. **Реализовать хендлеры админа** — назначение исполнителей, управление заявками
+3. **Интегрировать YooKassa** — `PaymentService` в `db_service.py`, webhook
+4. **Перенести MiniApp-форму заявки** — подключить frontend к `OrderService.create()`
+
+### Средний приоритет
+5. **Подключить Redis** — раскомментировать `redis.py`, FSM storage, кеширование FAQ
+6. **Написать FastAPI REST API** (`backend/api/`) — для MiniApp, для внешних интеграций
+7. **Dockerfile + docker-compose** — PostgreSQL, Redis, бот, frontend
+8. **Удалить дубли** — корневой `migrations/`, `db_layer/`
+
+### Низкий приоритет
+9. **Написать тесты** — unit-тесты для `db_service.py`
+10. **README.md** — инструкция по развёртыванию
+11. **CI/CD** — GitHub Actions для линтинга и тестов
+12. **Заменить imgur-картинки** на Yandex Cloud (executor/admin)
+13. **Заменить placeholder URLs** (Instagram, Telegram-канал отзывов)
+
+---
+
+## Общая статистика
+
+| Метрика | Значение |
+|---------|----------|
+| Python-файлов (backend) | 25 |
+| Строк кода (models.py) | 437 |
+| Строк кода (db_service.py) | 686 |
+| Строк кода (миграция) | 311 |
+| Таблиц в БД | 9 |
+| Enum-типов | 10 |
+| Frontend-компонентов | 8 |
+| Frontend-страниц | 7 |
+| Хендлеров бота | 4 (2 активных, 2 стаба) |
+| Сервисов | 6 |
+| Тестов | 0 |

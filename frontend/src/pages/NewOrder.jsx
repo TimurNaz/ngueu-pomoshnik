@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTelegram } from '../hooks/useTelegram'
+import { API_BASE_URL } from '../config'
 
 const WORK_TYPES = [
   { id: 'coursework', label: '📊 Курсовая', emoji: '📊' },
@@ -27,16 +28,17 @@ const INITIAL_STATE = {
   deadline: '',
   urgency: '',
   antiplagiat: '',
-  contactInfo: '',
+  attachments: [], // Список URL загруженных файлов
 }
 
 export default function NewOrder() {
   const [form, setForm] = useState(INITIAL_STATE)
   const [errors, setErrors] = useState({})
-  const [step, setStep] = useState(1) // 1 = тип/тема, 2 = детали, 3 = итог
+  const [step, setStep] = useState(1) 
   const [submitting, setSubmitting] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const navigate = useNavigate()
-  const { haptic } = useTelegram()
+  const { haptic, user, tg } = useTelegram()
 
   function set(key, value) {
     setForm((f) => ({ ...f, [key]: value }))
@@ -67,13 +69,96 @@ export default function NewOrder() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  async function handleFileUpload(e) {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploading(true);
+    haptic('impact', 'light');
+
+    for (const file of files) {
+      // Проверка размера (30 MB)
+      if (file.size > 30 * 1024 * 1024) {
+        tg.showAlert(`Файл ${file.name} слишком большой (макс. 30Мб)`);
+        continue;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/upload`, {
+          method: 'POST',
+          headers: { 'bypass-tunnel-reminder': 'true' },
+          body: formData,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setForm(f => ({
+            ...f,
+            attachments: [...f.attachments, { name: file.name, url: data.file_url }]
+          }));
+        } else {
+          tg.showAlert(`Ошибка загрузки ${file.name}`);
+        }
+      } catch (err) {
+        console.error('Upload error:', err);
+        tg.showAlert('Ошибка сервера при загрузке');
+      }
+    }
+    setUploading(false);
+  }
+
+  function removeFile(index) {
+    haptic('impact', 'light');
+    setForm(f => ({
+      ...f,
+      attachments: f.attachments.filter((_, i) => i !== index)
+    }));
+  }
+
   async function submit() {
     haptic('notification', 'success')
     setSubmitting(true)
-    // TODO: POST /api/requests с form-данными
-    await new Promise((r) => setTimeout(r, 1200)) // Имитация запроса
-    setSubmitting(false)
-    navigate('/orders', { state: { newOrder: true } })
+    
+    const userId = user?.id || 927125510;
+
+    const orderData = {
+      client_id: userId,
+      work_type: form.workType,
+      subject: form.subject,
+      topic: form.topic,
+      teacher: form.teacher || null,
+      requirements: form.requirements || null,
+      antiplagiat_percent: (form.antiplagiat && form.antiplagiat !== 'discuss') ? parseInt(form.antiplagiat) : null,
+      deadline: form.deadline ? new Date(form.deadline).toISOString() : null,
+      urgency: form.urgency,
+      attachments: form.attachments.map(a => a.url)
+    };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'bypass-tunnel-reminder': 'true',
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Ошибка: ${errorText}`);
+      }
+
+      setSubmitting(false)
+      navigate('/orders', { state: { newOrder: true } })
+    } catch (error) {
+      console.error('Submission error:', error);
+      alert('⚠️ Не удалось отправить заявку. Пожалуйста, попробуйте позже.');
+      setSubmitting(false)
+    }
   }
 
   const selectedType = WORK_TYPES.find((t) => t.id === form.workType)
@@ -156,9 +241,6 @@ export default function NewOrder() {
                   value={form.teacher}
                   onChange={(e) => set('teacher', e.target.value)}
                 />
-                <p className="form-hint">
-                  Поможет подобрать исполнителя, знакомого с требованиями
-                </p>
               </div>
             </div>
 
@@ -195,49 +277,78 @@ export default function NewOrder() {
               <h2 className="form-card__title">Требования к работе</h2>
 
               <div className="form-group">
-                <label className="form-label">Требования и методичка</label>
+                <label className="form-label">Методичка и файлы (до 30Мб)</label>
+                <div className="file-upload-zone">
+                  <input
+                    type="file"
+                    id="file-input"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={handleFileUpload}
+                    accept=".pdf,.doc,.docx,.jpg,.png,.jpeg"
+                  />
+                  <label htmlFor="file-input" className="btn btn--ghost" style={{ width: '100%', borderStyle: 'dashed' }}>
+                    {uploading ? '⏳ Загрузка...' : '📎 Прикрепить документы'}
+                  </label>
+                </div>
+
+                {form.attachments.length > 0 && (
+                  <div className="file-list" style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {form.attachments.map((file, index) => (
+                      <div key={index} className="file-item" style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        background: 'var(--bg-secondary)',
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        fontSize: 13
+                      }}>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📄 {file.name}</span>
+                        <button onClick={() => removeFile(index)} style={{ color: 'var(--accent)', border: 'none', background: 'none', padding: 4 }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Комментарий к заказу</label>
                 <textarea
                   className="form-textarea"
-                  placeholder="Опишите требования: объём, оформление, источники, особые пожелания..."
+                  placeholder="Опишите требования: объём, оформление, источники..."
                   value={form.requirements}
                   onChange={(e) => set('requirements', e.target.value)}
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Антиплагиат</label>
-                <select
-                  className="form-select"
-                  value={form.antiplagiat}
-                  onChange={(e) => set('antiplagiat', e.target.value)}
-                >
-                  <option value="">Не требуется</option>
-                  <option value="70">Не менее 70%</option>
-                  <option value="75">Не менее 75%</option>
-                  <option value="80">Не менее 80%</option>
-                  <option value="85">Не менее 85%</option>
-                  <option value="discuss">Уточнить у исполнителя</option>
-                </select>
+              <div className="form-group" style={{display: 'flex', gap: 10}}>
+                <div style={{flex: 1}}>
+                    <label className="form-label">Антиплагиат</label>
+                    <select
+                    className="form-select"
+                    value={form.antiplagiat}
+                    onChange={(e) => set('antiplagiat', e.target.value)}
+                    >
+                    <option value="">Не требуется</option>
+                    <option value="70">≥ 70%</option>
+                    <option value="75">≥ 75%</option>
+                    <option value="80">≥ 80%</option>
+                    <option value="85">≥ 85%</option>
+                    <option value="discuss">Уточнить</option>
+                    </select>
+                </div>
+                <div style={{flex: 1}}>
+                    <label className="form-label">Дедлайн</label>
+                    <input
+                    type="date"
+                    className="form-input"
+                    value={form.deadline}
+                    onChange={(e) => set('deadline', e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    />
+                </div>
               </div>
-
-              <div className="form-group">
-                <label className="form-label">Дедлайн (дата сдачи)</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={form.deadline}
-                  onChange={(e) => set('deadline', e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                />
-              </div>
-            </div>
-
-            <div className="form-notice">
-              <span className="form-notice__icon">💡</span>
-              <p className="form-notice__text">
-                Чем подробнее вы опишете требования, тем точнее будет подобран
-                исполнитель и цена работы.
-              </p>
             </div>
 
             <div style={{ display: 'flex', gap: 10 }}>
@@ -267,9 +378,7 @@ export default function NewOrder() {
 
               <div className="summary-row">
                 <span className="summary-row__label">Тип работы</span>
-                <span className="summary-row__value">
-                  {selectedType?.label ?? '—'}
-                </span>
+                <span className="summary-row__value">{selectedType?.label ?? '—'}</span>
               </div>
               <div className="summary-divider" />
 
@@ -285,48 +394,16 @@ export default function NewOrder() {
               </div>
               <div className="summary-divider" />
 
-              {form.teacher && (
-                <>
-                  <div className="summary-row">
-                    <span className="summary-row__label">Преподаватель</span>
-                    <span className="summary-row__value">{form.teacher}</span>
-                  </div>
-                  <div className="summary-divider" />
-                </>
-              )}
-
               <div className="summary-row">
-                <span className="summary-row__label">Срочность</span>
-                <span className="summary-row__value">
-                  {URGENCY.find((u) => u.id === form.urgency)?.label ?? '—'}
-                </span>
+                <span className="summary-row__label">Файлы</span>
+                <span className="summary-row__value">{form.attachments.length} прикреплено</span>
               </div>
               <div className="summary-divider" />
-
-              {form.antiplagiat && (
-                <>
-                  <div className="summary-row">
-                    <span className="summary-row__label">Антиплагиат</span>
-                    <span className="summary-row__value">
-                      {form.antiplagiat === 'discuss' ? 'Уточнить' : `≥ ${form.antiplagiat}%`}
-                    </span>
-                  </div>
-                  <div className="summary-divider" />
-                </>
-              )}
 
               <div className="summary-row summary-row--total">
                 <span className="summary-row__label">Цена</span>
                 <span className="summary-row__value">По договорённости</span>
               </div>
-            </div>
-
-            <div className="form-notice">
-              <span className="form-notice__icon">⚡</span>
-              <p className="form-notice__text">
-                После отправки администратор подберёт исполнителя и свяжется с
-                вами в течение нескольких часов с ценой.
-              </p>
             </div>
 
             <div style={{ display: 'flex', gap: 10 }}>
@@ -341,7 +418,7 @@ export default function NewOrder() {
                 className="btn btn--green"
                 style={{ flex: 2 }}
                 onClick={submit}
-                disabled={submitting}
+                disabled={submitting || uploading}
               >
                 {submitting ? '⏳ Отправка...' : '🚀 Отправить заявку'}
               </button>
