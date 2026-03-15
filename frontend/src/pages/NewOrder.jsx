@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTelegram } from '../hooks/useTelegram'
-import { API_BASE_URL } from '../config'
+import { API_BASE_URL, getApiHeaders } from '../config'
 
 const WORK_TYPES = [
   { id: 'coursework', label: '📊 Курсовая', emoji: '📊' },
@@ -38,7 +38,9 @@ export default function NewOrder() {
   const [submitting, setSubmitting] = useState(false)
   const [uploading, setUploading] = useState(false)
   const navigate = useNavigate()
-  const { haptic, user, tg } = useTelegram()
+  const { haptic, user, tg, initData } = useTelegram()
+
+  const userId = user?.id;
 
   function set(key, value) {
     setForm((f) => ({ ...f, [key]: value }))
@@ -77,7 +79,6 @@ export default function NewOrder() {
     haptic('impact', 'light');
 
     for (const file of files) {
-      // Проверка размера (30 MB)
       if (file.size > 30 * 1024 * 1024) {
         tg.showAlert(`Файл ${file.name} слишком большой (макс. 30Мб)`);
         continue;
@@ -89,7 +90,7 @@ export default function NewOrder() {
       try {
         const response = await fetch(`${API_BASE_URL}/api/upload`, {
           method: 'POST',
-          headers: { 'bypass-tunnel-reminder': 'true' },
+          headers: getApiHeaders(initData),
           body: formData,
         });
 
@@ -119,11 +120,14 @@ export default function NewOrder() {
   }
 
   async function submit() {
+    if (!userId) {
+        tg.showAlert('Ошибка: Telegram ID не найден');
+        return;
+    }
+
     haptic('notification', 'success')
     setSubmitting(true)
     
-    const userId = user?.id || 927125510;
-
     const orderData = {
       client_id: userId,
       work_type: form.workType,
@@ -140,10 +144,7 @@ export default function NewOrder() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/orders`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'bypass-tunnel-reminder': 'true',
-        },
+        headers: getApiHeaders(initData, { 'Content-Type': 'application/json' }),
         body: JSON.stringify(orderData),
       });
 
@@ -162,6 +163,8 @@ export default function NewOrder() {
   }
 
   const selectedType = WORK_TYPES.find((t) => t.id === form.workType)
+
+  if (!userId) return <div className="order-form-page" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh'}}><p>Авторизация Telegram...</p></div>
 
   return (
     <div className="order-form-page">

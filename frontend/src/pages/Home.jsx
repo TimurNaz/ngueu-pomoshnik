@@ -2,22 +2,25 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTelegram } from '../hooks/useTelegram'
 import StatusBadge from '../components/ui/StatusBadge'
-import { API_BASE_URL } from '../config'
+import { API_BASE_URL, getApiHeaders } from '../config'
 
 export default function Home() {
   const navigate = useNavigate()
-  const { user, haptic } = useTelegram()
+  const { user, haptic, initData } = useTelegram()
   const [profile, setProfile] = useState(null)
   const [latestOrders, setLatestOrders] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const userId = user?.id || 927125510;
+  // Используем ID только из Telegram
+  const userId = user?.id;
   const displayName = user?.first_name ?? 'Студент'
 
   useEffect(() => {
     async function fetchData() {
+      if (!userId) return;
+
       try {
-        const headers = { 'bypass-tunnel-reminder': 'true' };
+        const headers = getApiHeaders(initData);
         
         // Загружаем профиль
         const profRes = await fetch(`${API_BASE_URL}/api/users/${userId}`, { headers });
@@ -38,8 +41,14 @@ export default function Home() {
         setLoading(false);
       }
     }
-    fetchData();
-  }, [userId]);
+    
+    if (userId) {
+        fetchData();
+    } else {
+        // Если мы не в Telegram, загрузка не закончится, пока не появится ID
+        setLoading(false);
+    }
+  }, [userId, initData]);
 
   function handleAction(path) {
     haptic('impact', 'light')
@@ -52,14 +61,17 @@ export default function Home() {
   };
 
   const getLoyaltyBadge = (level) => {
-    const levels = {
-      novice: '🌱 Новичок',
-      student: '🎓 Студент',
-      regular: '⭐ Постоянный',
-      vip: '👑 VIP'
-    };
+    const levels = { novice: '🌱 Новичок', student: '🎓 Студент', regular: '⭐ Постоянный', vip: '👑 VIP' };
     return levels[level] || '🌱 Новичок';
   };
+
+  if (!userId && !loading) {
+      return (
+        <div className="home" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh'}}>
+            <p>Авторизация Telegram...</p>
+        </div>
+      )
+  }
 
   return (
     <div className="home">
@@ -101,7 +113,7 @@ export default function Home() {
             >
               Профиль →
             </button>
-            <span className="bonus-card__id">#{userId}</span>
+            <span className="bonus-card__id">#{userId || '...'}</span>
           </div>
         </div>
 

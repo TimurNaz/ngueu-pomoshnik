@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # 1. База данных PostgreSQL
   db:
@@ -11,7 +9,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: ${DB_NAME:-ngueu_db}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5435:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -22,7 +20,7 @@ services:
       dockerfile: Dockerfile
     container_name: ngueu_api
     restart: always
-    command: uvicorn backend.api.main:app --host 0.0.0.0 --port 8000
+    command: uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 --no-access-log
     depends_on:
       - db
     environment:
@@ -32,6 +30,8 @@ services:
       - DB_PORT=5432
       - DB_NAME=${DB_NAME:-ngueu_db}
       - BOT_TOKEN=${BOT_TOKEN}
+      - ADMIN_IDS=${ADMIN_IDS}
+      - PYTHONPATH=/app:/app/backend:/app/backend/bot
     volumes:
       # Пробрасываем папку с загрузками, чтобы файлы не удалялись при перезапуске
       - ./backend/static/uploads:/app/backend/static/uploads
@@ -53,6 +53,7 @@ services:
       - DB_PORT=5432
       - DB_NAME=${DB_NAME:-ngueu_db}
       - BOT_TOKEN=${BOT_TOKEN}
+      - ADMIN_IDS=${ADMIN_IDS}
 
   # 4. React (Фронтенд + Nginx)
   frontend:

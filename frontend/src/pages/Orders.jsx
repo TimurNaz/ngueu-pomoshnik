@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTelegram } from '../hooks/useTelegram'
-import { API_BASE_URL } from '../config'
+import { API_BASE_URL, getApiHeaders } from '../config'
 import StatusBadge from '../components/ui/StatusBadge'
 import OrderProgress from '../components/ui/OrderProgress'
 
@@ -19,17 +19,17 @@ export default function Orders() {
   const [loading, setLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState('all')
   const navigate = useNavigate()
-  const { user } = useTelegram()
+  const { user, initData } = useTelegram()
   
-  const userId = user?.id || 927125510;
+  const userId = user?.id;
 
   useEffect(() => {
     async function fetchOrders() {
+      if (!userId) return;
+
       try {
         const response = await fetch(`${API_BASE_URL}/api/orders/client/${userId}`, {
-          headers: {
-            'bypass-tunnel-reminder': 'true'
-          }
+          headers: getApiHeaders(initData)
         });
         if (!response.ok) throw new Error('Failed to fetch');
         const data = await response.json();
@@ -40,14 +40,20 @@ export default function Orders() {
         setLoading(false);
       }
     }
-    fetchOrders();
-  }, [userId]);
+    
+    if (userId) {
+        fetchOrders();
+    } else {
+        setLoading(false);
+    }
+  }, [userId, initData]);
 
   const filtered =
     activeFilter === 'all'
       ? orders
       : orders.filter((o) => o.status === activeFilter)
 
+  if (!userId && !loading) return <div className="orders-page" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh'}}><p>Авторизация Telegram...</p></div>
   if (loading) {
     return <div className="orders-page"><p style={{textAlign: 'center', marginTop: 50}}>Загрузка...</p></div>
   }

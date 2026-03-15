@@ -17,14 +17,14 @@ from handlers import common, client, executor, admin
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Инициализация бота (вынесена для импорта в API)
+bot = Bot(
+    token=TOKEN,
+    default=DefaultBotProperties(parse_mode="HTML")
+)
 
 async def main():
     try:
-        bot = Bot(
-            token=TOKEN,
-            default=DefaultBotProperties(parse_mode="HTML")
-        )
-
         # TODO: В production заменить на RedisStorage для сохранения FSM-состояний
         # from aiogram.fsm.storage.redis import RedisStorage
         # from config import REDIS_URL

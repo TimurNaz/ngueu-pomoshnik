@@ -3,12 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom'
 import StatusBadge from '../components/ui/StatusBadge'
 import OrderProgress from '../components/ui/OrderProgress'
 import { useTelegram } from '../hooks/useTelegram'
-import { API_BASE_URL } from '../config'
+import { API_BASE_URL, getApiHeaders } from '../config'
 
 export default function OrderDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { haptic } = useTelegram()
+  const { haptic, initData } = useTelegram()
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
@@ -17,7 +17,7 @@ export default function OrderDetail() {
     async function fetchOrder() {
       try {
         const response = await fetch(`${API_BASE_URL}/api/orders/${id}`, {
-          headers: { 'bypass-tunnel-reminder': 'true' }
+          headers: getApiHeaders(initData)
         });
         if (!response.ok) throw new Error('Failed to fetch');
         const data = await response.json();
@@ -29,7 +29,7 @@ export default function OrderDetail() {
       }
     }
     fetchOrder();
-  }, [id]);
+  }, [id, initData]);
 
   async function handleCancel() {
     if (!window.confirm('Вы уверены, что хотите отменить эту заявку?')) return;
@@ -39,7 +39,7 @@ export default function OrderDetail() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/orders/${id}/cancel`, {
         method: 'POST',
-        headers: { 'bypass-tunnel-reminder': 'true' }
+        headers: getApiHeaders(initData)
       });
       if (response.ok) {
         alert('Заявка успешно отменена');

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTelegram } from '../hooks/useTelegram'
-import { API_BASE_URL } from '../config'
+import { API_BASE_URL, getApiHeaders } from '../config'
 
 export default function Profile() {
-  const { user, haptic, tg } = useTelegram()
+  const { user, haptic, tg, initData } = useTelegram()
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
   const [bonusHistory, setBonusHistory] = useState([])
@@ -12,13 +12,15 @@ export default function Profile() {
   const [referralData, setReferralData] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  const userId = user?.id || 927125510;
+  const userId = user?.id;
   const displayName = [user?.first_name, user?.last_name].filter(Boolean).join(' ') || 'Студент'
 
   useEffect(() => {
     async function fetchData() {
+      if (!userId) return;
+
       try {
-        const headers = { 'bypass-tunnel-reminder': 'true' };
+        const headers = getApiHeaders(initData);
         
         const [profRes, bonusRes, ordersRes, refRes] = await Promise.all([
           fetch(`${API_BASE_URL}/api/users/${userId}`, { headers }),
@@ -41,28 +43,37 @@ export default function Profile() {
         setLoading(false);
       }
     }
-    fetchData();
-  }, [userId]);
+    
+    if (userId) {
+        fetchData();
+    } else {
+        setLoading(false);
+    }
+  }, [userId, initData]);
 
   function handleCopyLink() {
     if (!referralData?.link) return;
     haptic('notification', 'success');
     
-    // Пытаемся использовать стандартный метод Telegram если доступен
     if (tg?.setClipboardText) {
         tg.setClipboardText(referralData.link);
     } else {
         navigator.clipboard.writeText(referralData.link);
     }
-    tg.showAlert('Ссылка скопирована! Отправь её друзьям.');
+    tg?.showAlert?.('Ссылка скопирована! Отправь её друзьям.');
   }
 
   function handleShare() {
     if (!referralData?.link) return;
     haptic('impact', 'medium');
     const text = 'Привет! Пользуюсь крутым сервисом для учёбы в НГУЭУ. Залетай по моей ссылке и получи +500 бонусов на первый заказ! 🎓';
+    
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralData.link)}&text=${encodeURIComponent(text)}`;
-    tg.openTelegramLink(shareUrl);
+    if (tg?.openTelegramLink) {
+        tg.openTelegramLink(shareUrl);
+    } else {
+        window.open(shareUrl, '_blank');
+    }
   }
 
   const getLoyaltyLabel = (level) => {
@@ -70,6 +81,12 @@ export default function Profile() {
     return levels[level] || '🌱 Новичок';
   };
 
+  const handleItem = (fn) => {
+      haptic('impact', 'light');
+      fn();
+  };
+
+  if (!userId && !loading) return <div className="profile-page" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh'}}><p>Авторизация Telegram...</p></div>
   if (loading) return <div className="profile-page"><p style={{textAlign: 'center', marginTop: 50}}>Загрузка...</p></div>
 
   return (
@@ -121,7 +138,6 @@ export default function Profile() {
             </button>
           </div>
 
-          {/* ТЕПЕРЬ ПОКАЗЫВАЕМ ВСЕГДА */}
           <div style={{marginTop: 10, paddingTop: 10, borderTop: '1px solid #bae6fd', display: 'flex', justifyContent: 'space-between'}}>
             <span style={{fontSize: 12, color: '#0369a1'}}>Приглашено: <b>{referralData?.stats?.total_invited || 0}</b></span>
             <span style={{fontSize: 12, color: '#0369a1'}}>Заработано: <b>{referralData?.stats?.bonus_earned || 0} ₽</b></span>
@@ -188,7 +204,7 @@ export default function Profile() {
           </div>
         </div>
 
-        <div className="profile-menu">
+        <div className="profile-menu" style={{marginBottom: 20}}>
           <div className="profile-menu__item">
             <div className="profile-menu__icon profile-menu__icon--neutral">
               🏢
@@ -218,7 +234,7 @@ export default function Profile() {
         </div>
         
         <p style={{textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', margin: '20px 0'}}>
-          ID: {userId}
+          ID: {userId || '...'}
         </p>
       </div>
     </div>
