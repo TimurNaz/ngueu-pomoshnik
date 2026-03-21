@@ -13,11 +13,11 @@ COPY requirements.txt alembic.ini ./
 # Устанавливаем зависимости
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем весь код бэкенда
-COPY backend/ ./backend/
+# Копируем весь код бэкенда (контекст = ./backend, поэтому COPY . копирует содержимое backend/)
+COPY . ./backend/
 
-# Добавляем backend/bot в PYTHONPATH, чтобы импорты работали корректно
-ENV PYTHONPATH=/app/backend/bot
+# PYTHONPATH: /app — для импортов вида backend.api.main, /app/backend/bot — для моделей
+ENV PYTHONPATH=/app:/app/backend:/app/backend/bot
 
 # Команда по умолчанию (будет переопределяться в docker-compose)
 CMD ["python", "backend/bot/main.py"]

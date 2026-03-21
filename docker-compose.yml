@@ -16,7 +16,7 @@ services:
   # 2. FastAPI (Бэкенд)
   api:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     container_name: ngueu_api
     restart: always
@@ -31,7 +31,6 @@ services:
       - DB_NAME=${DB_NAME:-ngueu_db}
       - BOT_TOKEN=${BOT_TOKEN}
       - ADMIN_IDS=${ADMIN_IDS}
-      - PYTHONPATH=/app:/app/backend:/app/backend/bot
     volumes:
       # Пробрасываем папку с загрузками, чтобы файлы не удалялись при перезапуске
       - ./backend/static/uploads:/app/backend/static/uploads
@@ -39,7 +38,7 @@ services:
   # 3. Aiogram (Telegram Бот)
   bot:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     container_name: ngueu_bot
     restart: always

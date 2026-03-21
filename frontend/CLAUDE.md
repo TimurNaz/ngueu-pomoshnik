@@ -177,14 +177,17 @@ haptic('notification', 'success') // Успешное действие
 
 ## Интеграция с Backend
 
-Все mock-данные помечены комментарием `// TODO: заменить на API-запрос`.
-
 | Действие | Метод | Путь |
 |---|---|---|
-| Список заявок | GET | `/api/requests` |
-| Детали заявки | GET | `/api/requests/:id` |
-| Создать заявку | POST | `/api/requests` |
-| Профиль | GET | `/api/users/me` |
+| Профиль пользователя | GET | `/api/users/{userId}` |
+| История бонусов | GET | `/api/users/{userId}/bonuses` |
+| Реферальный код | GET | `/api/users/{userId}/referral` |
+| Последние заявки | GET | `/api/orders/latest/{userId}` |
+| Список заявок клиента | GET | `/api/orders/client/{userId}` |
+| Детали заявки | GET | `/api/orders/{id}` |
+| Создать заявку | POST | `/api/orders` |
+| Отменить заявку | POST | `/api/orders/{id}/cancel` |
+| Загрузить файл | POST | `/api/upload` |
 
 ---
 

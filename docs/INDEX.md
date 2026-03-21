@@ -22,6 +22,7 @@
 | [02_Backend/Services.md](02_Backend/Services.md) | Описание бизнес-логики (бонусы, лояльность) | ✅ Actual |
 | [03_Frontend/Structure.md](03_Frontend/Structure.md) | Архитектура Mini App, компоненты и страницы | ✅ Actual |
 | [03_Frontend/Config.md](03_Frontend/Config.md) | Конфигурация фронтенда и связь с API | ✅ Actual |
+| [03_Frontend/FrontendAudit.md](03_Frontend/FrontendAudit.md) | Аудит фронтенда: проблемы, рекомендации | ✅ Actual |
 | [04_DevOps/LocalSetup.md](04_DevOps/LocalSetup.md) | Руководство по локальному запуску проекта | ✅ Actual |
 | [04_DevOps/Deploy.md](04_DevOps/Deploy.md) | Инструкции по деплою и управлению сервером | ✅ Actual |
 | [04_DevOps/Secrets.md](04_DevOps/Secrets.md) | Переменные окружения и безопасность | ✅ Actual |

@@ -14,7 +14,6 @@ export const API_BASE_URL = window.location.origin;
  */
 export const getApiHeaders = (initData = '', extraHeaders = {}) => {
   return {
-    'bypass-tunnel-reminder': 'true',
     'X-TG-Init-Data': initData,
     ...extraHeaders
   };

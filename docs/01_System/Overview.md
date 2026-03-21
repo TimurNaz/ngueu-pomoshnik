@@ -86,11 +86,7 @@ ngueu-pomoshnik/
 │   ├── 04_DevOps/              # Deploy.md, Secrets.md, LocalSetup.md
 │   └── 99_State/               # Changelog.md, Issues.md
 ├── docker-compose.yml          # Оркестрация (db, api, bot, frontend)
-├── Dockerfile                  # Сборка Python окружения
-├── requirements.txt            # Зависимости Python
-├── alembic.ini                 # Конфиг Alembic
-├── deploy.sh                   # Скрипт деплоя на сервер
-└── start_bot.sh                # Скрипт запуска бота
+└── deploy.sh                   # Скрипт деплоя на сервер
 ```
 
 ---
