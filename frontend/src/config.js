@@ -1,5 +1,20 @@
-// frontend/src/config.js
+/**
+ * Глобальная конфигурация API
+ */
 
-// Теперь мы используем относительные пути. 
-// Vite сам поймет, что запросы /api нужно проксировать на бэкенд.
-export const API_BASE_URL = ''; 
+// Базовый URL бэкенда.
+// Используем текущий домен, так как Nginx проксирует запросы /api на бэкенд
+export const API_BASE_URL = window.location.origin;
+
+/**
+ * Вспомогательная функция для генерации заголовков запроса.
+ * Добавляет авторизацию Telegram и необходимые технические заголовки.
+ * @param {string} initData - Сырые данные из Telegram.WebApp.initData
+ * @param {Object} extraHeaders - Дополнительные заголовки
+ */
+export const getApiHeaders = (initData = '', extraHeaders = {}) => {
+  return {
+    'X-TG-Init-Data': initData,
+    ...extraHeaders
+  };
+};

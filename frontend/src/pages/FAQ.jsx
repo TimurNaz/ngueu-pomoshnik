@@ -113,6 +113,7 @@ export default function FAQ() {
 
         {/* Категории */}
         <div className="faq-categories">
+          <p className="faq-section-label">Категории</p>
           {FAQ_DATA.map((cat) => (
             <div
               key={cat.id}
@@ -161,16 +162,16 @@ export default function FAQ() {
           ))}
         </div>
 
-        {/* Контакт */}
+        {/* Контакт — в стиле action-card--light с главной */}
         <div className="faq-contact">
-          <div className="faq-contact__icon">🎧</div>
+          <span className="faq-contact__icon">🎧</span>
           <h2 className="faq-contact__title">Не нашли ответ?</h2>
           <p className="faq-contact__sub">
             Напишите нам — ответим быстро и поможем разобраться в любой ситуации.
           </p>
           <button
             className="faq-contact__btn"
-            onClick={() => window.open('https://t.me/ngueu_helper_bot', '_blank')}
+            onClick={() => window.open('https://t.me/zachetlearning/13', '_blank')}
           >
             💬 Написать в поддержку
           </button>

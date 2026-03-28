@@ -4,14 +4,15 @@
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .form-label {
-  font-size: var(--font-size-sm);
+  font-size: 11px;
   font-weight: 600;
-  color: var(--text-secondary);
-  letter-spacing: 0.2px;
+  color: #8e8e8e;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .form-label span {
@@ -23,29 +24,33 @@
 .form-select,
 .form-textarea {
   width: 100%;
-  padding: 13px 16px;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
-  font-size: var(--font-size-base);
-  color: var(--text-primary);
+  padding: 14px 16px;
+  background: #fafafa;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 400;
+  color: #1a1a1a;
   font-family: var(--font-base);
   transition: border-color var(--transition), box-shadow var(--transition);
   outline: none;
   appearance: none;
   -webkit-appearance: none;
+  box-sizing: border-box;
 }
 
 .form-input::placeholder,
 .form-textarea::placeholder {
-  color: var(--text-muted);
+  color: #bbb;
+  font-weight: 400;
 }
 
 .form-input:focus,
 .form-select:focus,
 .form-textarea:focus {
-  border-color: var(--accent-light);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  border-color: #c3fe4c;
+  box-shadow: 0 0 0 3px rgba(195, 254, 76, 0.15);
+  background: #fff;
 }
 
 .form-input--error,

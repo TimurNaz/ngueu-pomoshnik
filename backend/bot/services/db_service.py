@@ -9,11 +9,14 @@ import secrets
 import string
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, List, Tuple
+from pathlib import Path
 
 from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
+from aiogram import types, Bot
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, InputMediaDocument
 
 from db.models import (
     User, UserRole, LoyaltyLevel, ExecutorProfile,
@@ -22,6 +25,7 @@ from db.models import (
     BonusTransaction, BonusType,
     Referral, ReferralStatus,
     Review, HolidayBonus, HolidayTarget, KnowledgeBase,
+    Notification, NotificationType,
     LOYALTY_THRESHOLDS, CASHBACK_RATES,
     REGISTRATION_BONUS, REFERRAL_BONUS,
     COMMISSION_RATE, MAX_BONUS_RATIO,
@@ -35,9 +39,27 @@ def _generate_referral_code(length: int = 8) -> str:
     alphabet = string.ascii_uppercase + string.digits
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
+class ExecutorService:
+    @staticmethod
+    async def get_available() -> List[Tuple[User, ExecutorProfile]]:
+        """Возвращает список доступных и проверенных исполнителей."""
+        async with async_session() as session:
+            query = (
+                select(User, ExecutorProfile)
+                .join(ExecutorProfile, User.id == ExecutorProfile.user_id)
+                .where(
+                    User.role == UserRole.executor,
+                    User.is_active == True,
+                    ExecutorProfile.is_available == True,
+                    ExecutorProfile.is_verified == True
+                )
+            )
+            result = await session.execute(query)
+            return result.all()
+
 class UserService:
     @staticmethod
-    async def get_or_create(telegram_id: int, username: Optional[str] = None, first_name: Optional[str] = None, last_name: Optional[str] = None, referral_code: Optional[str] = None) -> tuple[User, bool]:
+    async def get_or_create(telegram_id: int, username: Optional[str] = None, first_name: Optional[str] = None, last_name: Optional[str] = None, referral_code: Optional[str] = None) -> Tuple[User, bool]:
         async with async_session() as session:
             try:
                 result = await session.execute(select(User).where(User.id == telegram_id))
@@ -49,15 +71,28 @@ class UserService:
                     if last_name and user.last_name != last_name: user.last_name = last_name; changed = True
                     if changed: await session.commit()
                     return user, False
+                
                 while True:
                     code = _generate_referral_code()
                     exists = await session.execute(select(User).where(User.referral_code == code))
                     if not exists.scalar_one_or_none(): break
-                user = User(id=telegram_id, username=username, first_name=first_name, last_name=last_name, referral_code=code, bonus_balance=Decimal(REGISTRATION_BONUS), loyalty_level=LoyaltyLevel.novice, cashback_percent=0.0)
+                
+                user = User(
+                    id=telegram_id, 
+                    username=username, 
+                    first_name=first_name, 
+                    last_name=last_name, 
+                    referral_code=code, 
+                    bonus_balance=Decimal(REGISTRATION_BONUS), 
+                    loyalty_level=LoyaltyLevel.novice, 
+                    cashback_percent=0.0
+                )
                 session.add(user)
                 await session.flush()
+                
                 reg_tx = BonusTransaction(user_id=telegram_id, amount=Decimal(REGISTRATION_BONUS), type=BonusType.registration, description=f"Приветственный бонус за регистрацию")
                 session.add(reg_tx)
+                
                 if referral_code:
                     ref_result = await session.execute(select(User).where(User.referral_code == referral_code))
                     referrer = ref_result.scalar_one_or_none()
@@ -65,10 +100,14 @@ class UserService:
                         user.referred_by_id = referrer.id
                         referral = Referral(referrer_id=referrer.id, referred_id=telegram_id, status=ReferralStatus.pending)
                         session.add(referral)
-                await session.commit(); await session.refresh(user)
+                
+                await session.commit()
+                await session.refresh(user)
                 return user, True
             except SQLAlchemyError as e:
-                await session.rollback(); logger.error(f"Ошибка UserService: {e}"); raise
+                await session.rollback()
+                logger.error(f"Ошибка UserService: {e}")
+                raise
 
     @staticmethod
     async def get_by_id(telegram_id: int) -> Optional[User]:
@@ -95,6 +134,82 @@ class UserService:
             activated = await session.execute(select(func.count(Referral.id)).where(Referral.referrer_id == telegram_id, Referral.status == ReferralStatus.activated))
             user = await session.get(User, telegram_id)
             return {"total_invited": total.scalar() or 0, "total_bought": activated.scalar() or 0, "bonus_earned": float(user.referral_bonus_total) if user else 0}
+
+    @staticmethod
+    async def format_order_text(order: Order) -> str:
+        """Форматирует детальный текст заявки для админа, включая имя клиента."""
+        client = await UserService.get_by_id(order.client_id)
+        client_name = f"{client.first_name or ''} {client.last_name or ''}".strip() or client.username or f"ID {order.client_id}"
+        
+        return (
+            f"🔔 <b>Заявка #{order.id}</b>\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"👤 <b>Клиент:</b> {client_name} (<a href='tg://user?id={order.client_id}'>{order.client_id}</a>)\n"
+            f"📚 <b>Предмет:</b> <code>{order.subject}</code>\n"
+            f"📝 <b>Тема:</b> {order.topic}\n"
+            f"🛠 <b>Тип:</b> {order.work_type.value}\n"
+            f"📅 <b>Срок:</b> {order.deadline.strftime('%d.%m.%Y %H:%M') if order.deadline else 'Не указан'}\n"
+            f"🔥 <b>Срочность:</b> {order.urgency.value if order.urgency else 'Не указана'}\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"📍 <b>Выберите исполнителя:</b>"
+        )
+
+    @staticmethod
+    async def get_admin_order_markup(order_id: int) -> InlineKeyboardMarkup:
+        """Создает клавиатуру с исполнителями для конкретного заказа."""
+        executors = await ExecutorService.get_available()
+        keyboard_btns = []
+        for u, profile in executors:
+            btn_text = f"👤 {u.first_name or u.username} ({profile.rating}⭐)"
+            keyboard_btns.append([InlineKeyboardButton(
+                text=btn_text, 
+                callback_data=f"assign_{order_id}_{u.id}"
+            )])
+        
+        keyboard_btns.append([InlineKeyboardButton(text="❌ Отклонить", callback_data=f"cancel_order_{order_id}")])
+        return InlineKeyboardMarkup(inline_keyboard=keyboard_btns)
+
+    @staticmethod
+    async def send_admin_alert(bot: Bot, order: Order) -> None:
+        """Отправляет детальное уведомление админам с файлами и выбором исполнителей."""
+        from config import ADMIN_IDS
+        if not ADMIN_IDS: return
+
+        text = await UserService.format_order_text(order)
+        markup = await UserService.get_admin_order_markup(order.id)
+
+        for admin_id in ADMIN_IDS:
+            try:
+                admin_user = await UserService.get_by_id(admin_id)
+                if not admin_user:
+                    continue
+
+                if order.attachments:
+                    media = []
+                    base_path = Path(__file__).resolve().parent.parent.parent / "static"
+                    
+                    for i, file_url in enumerate(order.attachments):
+                        file_name = file_url.split('/')[-1]
+                        file_path = base_path / "uploads" / file_name
+                        if not file_path.exists(): continue
+
+                        caption = text if i == 0 else ""
+                        ext = file_path.suffix.lower()
+                        if ext in ['.png', '.jpg', '.jpeg', '.webp']:
+                            media.append(InputMediaPhoto(media=types.FSInputFile(file_path), caption=caption, parse_mode="HTML"))
+                        else:
+                            media.append(InputMediaDocument(media=types.FSInputFile(file_path), caption=caption, parse_mode="HTML"))
+                    
+                    if media:
+                        await bot.send_media_group(chat_id=admin_id, media=media)
+                        await bot.send_message(chat_id=admin_id, text="👇 Назначьте исполнителя для этой заявки:", reply_markup=markup)
+                    else:
+                        await bot.send_message(admin_id, text, reply_markup=markup)
+                else:
+                    await bot.send_message(admin_id, text, reply_markup=markup)
+
+            except Exception as e:
+                logger.error(f"Не удалось отправить алерт админу {admin_id}: {e}")
 
 class BonusService:
     @staticmethod
@@ -178,5 +293,133 @@ class OrderService:
             return result.scalars().all()
 
     @staticmethod
+    async def get_unassigned() -> list[Order]:
+        """Получает список заказов, требующих внимания админа (status=new или status=assigned)."""
+        async with async_session() as session:
+            q = (
+                select(Order)
+                .where(Order.status.in_([OrderStatus.new, OrderStatus.assigned]))
+                .order_by(Order.created_at.asc())
+            )
+            result = await session.execute(q)
+            return result.scalars().all()
+
+    @staticmethod
+    async def assign_executor(order_id: int, executor_id: int) -> bool:
+        """Назначает исполнителя на заказ и меняет статус на assigned."""
+        async with async_session() as session:
+            try:
+                order = await session.get(Order, order_id)
+                if not order: return False
+                
+                order.executor_id = executor_id
+                order.status = OrderStatus.assigned
+                order.updated_at = datetime.now(timezone.utc)
+                
+                await session.commit()
+                return True
+            except Exception as e:
+                await session.rollback()
+                logger.error(f"Ошибка при назначении исполнителя в БД: {e}")
+                return False
+
+    @staticmethod
+    async def update_status(order_id: int, new_status: OrderStatus, result_files: Optional[List[str]] = None) -> bool:
+        """Универсальный метод обновления статуса заказа."""
+        async with async_session() as session:
+            try:
+                order = await session.get(Order, order_id)
+                if not order: return False
+                
+                order.status = new_status
+                if result_files:
+                    # Добавляем к существующим или заменяем? Обычно для результата отдельное поле было бы лучше, 
+                    # но пока будем использовать attachments или доп. логику
+                    order.attachments = list(set((order.attachments or []) + result_files))
+                
+                order.updated_at = datetime.now(timezone.utc)
+                await session.commit()
+                return True
+            except Exception as e:
+                await session.rollback()
+                logger.error(f"Ошибка при обновлении статуса заказа {order_id}: {e}")
+                return False
+
+    @staticmethod
+    async def get_executor_orders(executor_id: int, active_only: bool = True) -> list[Order]:
+        """Получает список заказов конкретного исполнителя."""
+        async with async_session() as session:
+            q = select(Order).where(Order.executor_id == executor_id)
+            if active_only:
+                q = q.where(Order.status.in_([OrderStatus.assigned, OrderStatus.in_progress, OrderStatus.review]))
+            result = await session.execute(q.order_by(Order.updated_at.desc()))
+            return result.scalars().all()
+
+    @staticmethod
     async def get_by_id(order_id: int) -> Optional[Order]:
         async with async_session() as session: return await session.get(Order, order_id)
+
+
+class NotificationDBService:
+    """Сервис для работы с уведомлениями в БД."""
+
+    @staticmethod
+    async def create(user_id: int, notif_type: NotificationType, title: str, text: str, order_id: Optional[int] = None) -> Notification:
+        """Создаёт уведомление в БД."""
+        async with async_session() as session:
+            notif = Notification(
+                user_id=user_id,
+                type=notif_type,
+                title=title,
+                text=text,
+                order_id=order_id,
+            )
+            session.add(notif)
+            await session.commit()
+            await session.refresh(notif)
+            return notif
+
+    @staticmethod
+    async def get_user_notifications(user_id: int, limit: int = 50) -> list[Notification]:
+        """Получает уведомления пользователя."""
+        async with async_session() as session:
+            result = await session.execute(
+                select(Notification)
+                .where(Notification.user_id == user_id)
+                .order_by(Notification.created_at.desc())
+                .limit(limit)
+            )
+            return result.scalars().all()
+
+    @staticmethod
+    async def get_unread_count(user_id: int) -> int:
+        """Считает непрочитанные уведомления."""
+        async with async_session() as session:
+            result = await session.execute(
+                select(func.count(Notification.id))
+                .where(Notification.user_id == user_id, Notification.is_read == False)
+            )
+            return result.scalar() or 0
+
+    @staticmethod
+    async def mark_read(notification_id: int, user_id: int) -> bool:
+        """Помечает одно уведомление как прочитанное."""
+        async with async_session() as session:
+            notif = await session.get(Notification, notification_id)
+            if not notif or notif.user_id != user_id:
+                return False
+            notif.is_read = True
+            await session.commit()
+            return True
+
+    @staticmethod
+    async def mark_all_read(user_id: int) -> int:
+        """Помечает все уведомления пользователя как прочитанные. Возвращает кол-во обновлённых."""
+        async with async_session() as session:
+            result = await session.execute(
+                update(Notification)
+                .where(Notification.user_id == user_id, Notification.is_read == False)
+                .values(is_read=True)
+            )
+            await session.commit()
+            return result.rowcount

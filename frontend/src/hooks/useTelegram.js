@@ -12,6 +12,9 @@ export function useTelegram() {
     username: 'student_ngueu',
   }
 
+  // Сырая строка данных для авторизации на бэкенде
+  const initData = tg?.initData || '';
+
   function close() {
     tg?.close()
   }
@@ -31,6 +34,7 @@ export function useTelegram() {
   return {
     tg,
     user,
+    initData,
     close,
     ready,
     expand,

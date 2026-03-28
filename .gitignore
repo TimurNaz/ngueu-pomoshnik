@@ -1,4 +1,7 @@
 .claude/
+.gemini/
+.venv/
+.vscode/
 venv/
 __pycache__/
 *.pyc
@@ -12,3 +15,7 @@ build/
 .pytest_cache/
 migrations/versions/
 !migrations/versions/.gitkeep
+
+# Пользовательские загрузки и бэкапы
+backend/static/uploads/
+backups/

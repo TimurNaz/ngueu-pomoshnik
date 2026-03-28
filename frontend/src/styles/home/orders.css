@@ -2,8 +2,8 @@
    Orders Page — История заявок
    ============================================================ */
 .orders-page {
-  background: var(--bg);
-  min-height: 100vh;
+  background: #fafafa;
+  flex: 1;
 }
 
 .orders-page__container {
@@ -13,6 +13,21 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* Заголовок страницы */
+.orders-page__title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.5px;
+}
+
+.orders-page__count {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: #8e8e8e;
+  margin-top: 2px;
 }
 
 /* Фильтры */
@@ -28,22 +43,24 @@
 
 .filter-chip {
   flex-shrink: 0;
-  padding: 8px 16px;
-  border-radius: var(--radius-full);
-  border: 1.5px solid var(--border);
-  background: var(--surface);
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fff;
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--text-secondary);
+  color: #8e8e8e;
   cursor: pointer;
   transition: all var(--transition);
   white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .filter-chip.active {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: #fff;
+  border-color: transparent;
+  background: #c3fe4c;
+  color: #3a3a3a;
+  box-shadow: 0 4px 12px rgba(195, 254, 76, 0.3);
 }
 
 .filter-chip:active {
@@ -53,69 +70,103 @@
 /* Пустое состояние */
 .orders-empty {
   text-align: center;
-  padding: 60px 24px;
+  padding: 48px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1.5px dashed rgba(0, 0, 0, 0.08);
 }
 
 .orders-empty__icon {
-  font-size: 56px;
-  opacity: 0.6;
+  font-size: 48px;
+  opacity: 0.7;
 }
 
 .orders-empty__title {
   font-size: var(--font-size-xl);
   font-weight: 700;
-  color: var(--text-primary);
+  color: #1a1a1a;
   letter-spacing: -0.3px;
 }
 
 .orders-empty__sub {
-  font-size: var(--font-size-md);
-  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  color: #8e8e8e;
   line-height: 1.5;
   max-width: 240px;
 }
 
+.orders-page__cta {
+  background: #c3fe4c;
+  color: #4d4d4d;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(195, 254, 76, 0.3);
+}
+
+.orders-page__cta:active {
+  background: #b3ee3c;
+}
+
 /* Карточка заявки */
 .order-card {
-  background: var(--surface);
-  border-radius: var(--radius-md);
+  background: #fff;
+  border-radius: 16px;
   padding: 18px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.04);
   cursor: pointer;
   transition: all var(--transition);
   text-decoration: none;
   display: block;
+  position: relative;
+  overflow: hidden;
+}
+
+.order-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #65a4f9, #4bc8e8);
+  opacity: 0;
+  transition: opacity var(--transition);
 }
 
 .order-card:active {
-  transform: scale(0.99);
-  background: var(--surface-2);
+  transform: scale(0.98);
+}
+
+.order-card:active::before {
+  opacity: 1;
 }
 
 .order-card__header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 12px;
 }
 
 .order-card__id {
   font-size: var(--font-size-xs);
-  color: var(--text-muted);
-  font-weight: 500;
+  color: #8e8e8e;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 3px 8px;
+  border-radius: 6px;
 }
 
 .order-card__title {
   font-size: var(--font-size-base);
   font-weight: 700;
-  color: var(--text-primary);
+  color: #1a1a1a;
   letter-spacing: -0.2px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   line-height: 1.3;
 }
 
@@ -131,7 +182,7 @@
   align-items: center;
   gap: 4px;
   font-size: var(--font-size-xs);
-  color: var(--text-muted);
+  color: #8e8e8e;
   font-weight: 500;
 }
 
@@ -143,24 +194,26 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .order-card__price {
   font-size: var(--font-size-lg);
   font-weight: 800;
-  color: var(--text-primary);
+  color: #1a1a1a;
 }
 
 .order-card__price span {
   font-size: var(--font-size-sm);
   font-weight: 500;
-  color: var(--text-muted);
+  color: #8e8e8e;
 }
 
 /* Детальная страница заявки */
 .order-detail {
-  background: var(--bg);
-  min-height: 100vh;
+  background: #fafafa;
+  flex: 1;
 }
 
 .order-detail__container {
@@ -173,25 +226,41 @@
 }
 
 .order-detail__hero {
-  background: var(--surface);
-  border-radius: var(--radius-md);
-  padding: 20px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.order-detail__hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #65a4f9, #4bc8e8);
 }
 
 .order-detail__number {
   font-size: var(--font-size-xs);
-  color: var(--text-muted);
+  color: #8e8e8e;
   margin-bottom: 8px;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.5px;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-block;
 }
 
 .order-detail__title {
-  font-size: var(--font-size-2xl);
+  font-size: 24px;
   font-weight: 800;
-  color: var(--text-primary);
+  color: #1a1a1a;
   letter-spacing: -0.5px;
   margin-bottom: 12px;
   line-height: 1.2;
@@ -201,11 +270,11 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  background: var(--surface);
-  border-radius: var(--radius-md);
+  background: #fff;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .detail-row {
@@ -213,7 +282,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 14px 18px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .detail-row:last-child {
@@ -222,25 +291,25 @@
 
 .detail-row__label {
   font-size: var(--font-size-sm);
-  color: var(--text-muted);
+  color: #8e8e8e;
   font-weight: 500;
 }
 
 .detail-row__value {
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--text-primary);
+  color: #1a1a1a;
   text-align: right;
   max-width: 60%;
 }
 
 /* Блок исполнителя */
 .executor-card {
-  background: var(--surface);
-  border-radius: var(--radius-md);
+  background: #fff;
+  border-radius: 16px;
   padding: 18px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.04);
   display: flex;
   align-items: center;
   gap: 14px;
@@ -249,14 +318,15 @@
 .executor-card__avatar {
   width: 48px;
   height: 48px;
-  border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  border-radius: 14px;
+  background: linear-gradient(135deg, #65a4f9, #4bc8e8);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
   color: #fff;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(101, 164, 249, 0.25);
 }
 
 .executor-card__info {
@@ -286,11 +356,244 @@
 }
 
 .executor-card__badge {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: rgba(75, 200, 232, 0.12);
+  color: #0a5f7a;
   padding: 6px 12px;
-  border-radius: var(--radius);
+  border-radius: 20px;
   font-size: var(--font-size-sm);
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* ============================================================
+   Payment Block — Блок оплаты на детальной странице заказа
+   ============================================================ */
+.payment-block {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.payment-block--paid {
+  border-color: rgba(75, 200, 232, 0.2);
+}
+
+.payment-block--confirm {
+  border-color: rgba(101, 164, 249, 0.15);
+}
+
+.payment-block--completed {
+  border-color: rgba(183, 243, 74, 0.2);
+  background: linear-gradient(135deg, rgba(183, 243, 74, 0.04), rgba(75, 200, 232, 0.04));
+}
+
+.payment-block--disputed {
+  border-color: rgba(244, 67, 54, 0.15);
+  background: rgba(244, 67, 54, 0.02);
+}
+
+.payment-block__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.payment-block__title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.2px;
+}
+
+.payment-block__check {
+  font-size: 20px;
+}
+
+.payment-block__deadline {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: #f9a825;
+  background: rgba(249, 168, 37, 0.1);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.payment-block__desc {
+  font-size: var(--font-size-sm);
+  color: #8e8e8e;
+  line-height: 1.5;
+}
+
+/* Сводка оплаты */
+.payment-block__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  background: #fafafa;
+  border-radius: 12px;
+}
+
+.payment-block__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-size-sm);
+  color: #555;
+}
+
+.payment-block__row--bonus {
+  color: #6abf40;
+}
+
+.payment-block__row--total {
+  padding-top: 8px;
+  margin-top: 4px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  font-weight: 700;
+  font-size: 16px;
+  color: #1a1a1a;
+}
+
+.payment-block__amount {
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+/* Бонусы */
+.payment-block__bonus {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.payment-block__bonus-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-sm);
+  color: #555;
+}
+
+.payment-block__bonus-balance {
+  color: #6abf40;
+  font-weight: 600;
+}
+
+.payment-block__slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #c3fe4c, #6abf40);
+  outline: none;
+}
+
+.payment-block__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 2px solid #6abf40;
+  cursor: pointer;
+}
+
+.payment-block__bonus-value {
+  text-align: center;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: #6abf40;
+}
+
+/* Кнопки */
+.payment-block__btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 14px;
+}
+
+.payment-block__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Зона отмены */
+.payment-block__cancel-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.payment-block__cancel-hint {
+  font-size: var(--font-size-xs);
+  color: #f9a825;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Форма спора */
+.payment-block__dispute {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.payment-block__textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.payment-block__textarea:focus {
+  border-color: var(--accent);
+}
+
+/* Статус бейджи — новые */
+.badge--priced {
+  background: rgba(249, 168, 37, 0.12);
+  color: #7a4f00;
+}
+
+.badge--paid {
+  background: rgba(75, 200, 232, 0.12);
+  color: #0a5f7a;
+}
+
+.badge--review {
+  background: rgba(101, 164, 249, 0.12);
+  color: #3d6eb8;
+}
+
+.badge--confirming {
+  background: rgba(101, 164, 249, 0.12);
+  color: #3d6eb8;
+}
+
+.badge--completed {
+  background: rgba(183, 243, 74, 0.12);
+  color: #3a7a10;
+}
+
+.badge--disputed {
+  background: rgba(244, 67, 54, 0.12);
+  color: #c62828;
 }

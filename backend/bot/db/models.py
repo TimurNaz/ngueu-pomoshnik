@@ -31,9 +31,14 @@ class LoyaltyLevel(str, enum.Enum):
 class OrderStatus(str, enum.Enum):
     new         = "new"
     assigned    = "assigned"
+    priced      = "priced"
+    paid        = "paid"
     in_progress = "in_progress"
     review      = "review"
     done        = "done"
+    confirming  = "confirming"
+    completed   = "completed"
+    disputed    = "disputed"
     canceled    = "canceled"
 
 class PaymentStatus(str, enum.Enum):
@@ -72,6 +77,25 @@ class WorkType(str, enum.Enum):
     lab        = "lab"
     practice   = "practice"
     other      = "other"
+
+class NotificationType(str, enum.Enum):
+    order_created      = "order_created"
+    executor_assigned  = "executor_assigned"
+    order_in_progress  = "order_in_progress"
+    order_review       = "order_review"
+    order_done         = "order_done"
+    order_canceled     = "order_canceled"
+    bonus              = "bonus"
+    system             = "system"
+    # Payment-related
+    price_set          = "price_set"
+    payment_pending    = "payment_pending"
+    payment_success    = "payment_success"
+    payment_refunded   = "payment_refunded"
+    order_confirming   = "order_confirming"
+    order_completed    = "order_completed"
+    order_disputed     = "order_disputed"
+    payment_reminder   = "payment_reminder"
 
 # ПЕРЕХОДИМ НА ПОЛНЫЕ НАЗВАНИЯ ДЛЯ СТАБИЛЬНОСТИ
 class UrgencyLevel(str, enum.Enum):
@@ -179,6 +203,10 @@ class Order(Base):
     assigned_at   = Column(DateTime(timezone=True), nullable=True)
     completed_at  = Column(DateTime(timezone=True), nullable=True)
     updated_at    = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    priced_at         = Column(DateTime(timezone=True), nullable=True)
+    paid_at           = Column(DateTime(timezone=True), nullable=True)
+    confirmed_at      = Column(DateTime(timezone=True), nullable=True)
+    payment_deadline  = Column(DateTime(timezone=True), nullable=True)
 
     client   = relationship("User", back_populates="orders_as_client", foreign_keys=[client_id])
     executor = relationship("User", back_populates="orders_as_executor", foreign_keys=[executor_id])
@@ -187,17 +215,27 @@ class Order(Base):
 
 class Payment(Base):
     __tablename__ = "payments"
-    id      = Column(Integer, primary_key=True, autoincrement=True)
-    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
-    user_id  = Column(BigInteger, ForeignKey("users.id"), nullable=False)
-    amount              = Column(Numeric(12, 2), nullable=False)
-    status              = Column(Enum(PaymentStatus, name="paymentstatus"), nullable=False, default=PaymentStatus.pending)
-    stage               = Column(Enum(PaymentStage, name="paymentstage"), nullable=False)
-    yookassa_payment_id = Column(String(64), unique=True, nullable=True)
-    prepayment_amount   = Column(Numeric(12, 2), nullable=True)
-    final_payment_amount = Column(Numeric(12, 2), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    paid_at    = Column(DateTime(timezone=True), nullable=True)
+    id                    = Column(Integer, primary_key=True, autoincrement=True)
+    order_id              = Column(Integer, ForeignKey("orders.id"), nullable=False)
+    user_id               = Column(BigInteger, ForeignKey("users.id"), nullable=False)
+    amount                = Column(Numeric(12, 2), nullable=False)
+    status                = Column(Enum(PaymentStatus, name="paymentstatus"), nullable=False, default=PaymentStatus.pending)
+    stage                 = Column(Enum(PaymentStage, name="paymentstage"), nullable=False)
+    provider_payment_id   = Column(String(64), unique=True, nullable=True)
+    provider_name         = Column(String(32), nullable=True)
+    frozen_amount         = Column(Numeric(12, 2), nullable=True)
+    released_amount       = Column(Numeric(12, 2), server_default="0")
+    refunded_amount       = Column(Numeric(12, 2), server_default="0")
+    bonus_used            = Column(Numeric(12, 2), server_default="0")
+    executor_paid         = Column(Boolean, default=False)
+    executor_paid_at      = Column(DateTime(timezone=True), nullable=True)
+    cancel_deadline       = Column(DateTime(timezone=True), nullable=True)
+    confirmation_deadline = Column(DateTime(timezone=True), nullable=True)
+    # Legacy columns (из миграции 001, не удаляем)
+    prepayment_amount     = Column(Numeric(12, 2), nullable=True)
+    final_payment_amount  = Column(Numeric(12, 2), nullable=True)
+    created_at            = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    paid_at               = Column(DateTime(timezone=True), nullable=True)
     order = relationship("Order", back_populates="payments")
     user  = relationship("User")
 
@@ -249,6 +287,19 @@ class HolidayBonus(Base):
     is_active    = Column(Boolean, nullable=False, default=True)
     is_sent      = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    user_id    = Column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
+    type       = Column(Enum(NotificationType, name="notificationtype"), nullable=False)
+    title      = Column(String(256), nullable=False)
+    text       = Column(Text, nullable=False)
+    order_id   = Column(Integer, ForeignKey("orders.id"), nullable=True)
+    is_read    = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    user  = relationship("User")
+    order = relationship("Order")
 
 class KnowledgeBase(Base):
     __tablename__ = "knowledge_base"

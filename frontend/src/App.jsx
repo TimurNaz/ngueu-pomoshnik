@@ -7,6 +7,8 @@ import Orders from './pages/Orders'
 import OrderDetail from './pages/OrderDetail'
 import FAQ from './pages/FAQ'
 import Profile from './pages/Profile'
+import OrderResult from './pages/OrderResult'
+import Notifications from './pages/Notifications'
 
 function requireOnboarding(element) {
   const done = localStorage.getItem('onboarding_done')
@@ -38,6 +40,14 @@ const router = createBrowserRouter([
       {
         path: 'orders/:id',
         element: <OrderDetail />,
+      },
+      {
+        path: 'order-result',
+        element: <OrderResult />,
+      },
+      {
+        path: 'notifications',
+        element: <Notifications />,
       },
       {
         path: 'faq',

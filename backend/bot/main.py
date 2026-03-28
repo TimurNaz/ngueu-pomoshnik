@@ -12,19 +12,20 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from config import TOKEN
 from handlers import common, client, executor, admin
+from services.scheduler_service import run_scheduler
 
 # Настройка логгера
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Инициализация бота (вынесена для импорта в API)
+bot = Bot(
+    token=TOKEN,
+    default=DefaultBotProperties(parse_mode="HTML")
+)
 
 async def main():
     try:
-        bot = Bot(
-            token=TOKEN,
-            default=DefaultBotProperties(parse_mode="HTML")
-        )
-
         # TODO: В production заменить на RedisStorage для сохранения FSM-состояний
         # from aiogram.fsm.storage.redis import RedisStorage
         # from config import REDIS_URL
@@ -38,6 +39,9 @@ async def main():
         dp.include_router(client.router)
         dp.include_router(executor.router)
         dp.include_router(admin.router)
+
+        # Запускаем планировщик фоновых задач
+        asyncio.create_task(run_scheduler())
 
         logger.info("Бот запущен.")
         await dp.start_polling(bot, skip_updates=True)

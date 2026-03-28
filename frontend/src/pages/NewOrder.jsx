@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTelegram } from '../hooks/useTelegram'
-import { API_BASE_URL } from '../config'
+import { API_BASE_URL, getApiHeaders } from '../config'
 
 const WORK_TYPES = [
   { id: 'coursework', label: '📊 Курсовая', emoji: '📊' },
@@ -24,6 +24,7 @@ const INITIAL_STATE = {
   subject: '',
   topic: '',
   teacher: '',
+  department: '',
   requirements: '',
   deadline: '',
   urgency: '',
@@ -38,7 +39,9 @@ export default function NewOrder() {
   const [submitting, setSubmitting] = useState(false)
   const [uploading, setUploading] = useState(false)
   const navigate = useNavigate()
-  const { haptic, user, tg } = useTelegram()
+  const { haptic, user, tg, initData } = useTelegram()
+
+  const userId = user?.id;
 
   function set(key, value) {
     setForm((f) => ({ ...f, [key]: value }))
@@ -77,7 +80,6 @@ export default function NewOrder() {
     haptic('impact', 'light');
 
     for (const file of files) {
-      // Проверка размера (30 MB)
       if (file.size > 30 * 1024 * 1024) {
         tg.showAlert(`Файл ${file.name} слишком большой (макс. 30Мб)`);
         continue;
@@ -89,7 +91,7 @@ export default function NewOrder() {
       try {
         const response = await fetch(`${API_BASE_URL}/api/upload`, {
           method: 'POST',
-          headers: { 'bypass-tunnel-reminder': 'true' },
+          headers: getApiHeaders(initData),
           body: formData,
         });
 
@@ -119,17 +121,21 @@ export default function NewOrder() {
   }
 
   async function submit() {
+    if (!userId) {
+        tg.showAlert('Ошибка: Telegram ID не найден');
+        return;
+    }
+
     haptic('notification', 'success')
     setSubmitting(true)
     
-    const userId = user?.id || 927125510;
-
     const orderData = {
       client_id: userId,
       work_type: form.workType,
       subject: form.subject,
       topic: form.topic,
       teacher: form.teacher || null,
+      department: form.department || null,
       requirements: form.requirements || null,
       antiplagiat_percent: (form.antiplagiat && form.antiplagiat !== 'discuss') ? parseInt(form.antiplagiat) : null,
       deadline: form.deadline ? new Date(form.deadline).toISOString() : null,
@@ -140,10 +146,7 @@ export default function NewOrder() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/orders`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'bypass-tunnel-reminder': 'true',
-        },
+        headers: getApiHeaders(initData, { 'Content-Type': 'application/json' }),
         body: JSON.stringify(orderData),
       });
 
@@ -152,16 +155,19 @@ export default function NewOrder() {
         throw new Error(`Ошибка: ${errorText}`);
       }
 
+      const result = await response.json();
       setSubmitting(false)
-      navigate('/orders', { state: { newOrder: true } })
+      navigate('/order-result', { replace: true, state: { orderId: result.order_id } })
     } catch (error) {
       console.error('Submission error:', error);
-      alert('⚠️ Не удалось отправить заявку. Пожалуйста, попробуйте позже.');
       setSubmitting(false)
+      navigate('/order-result', { replace: true, state: { error: true } })
     }
   }
 
   const selectedType = WORK_TYPES.find((t) => t.id === form.workType)
+
+  if (!userId) return <div className="order-form-page" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh'}}><p>Авторизация Telegram...</p></div>
 
   return (
     <div className="order-form-page">
@@ -233,19 +239,37 @@ export default function NewOrder() {
                 {errors.topic && <p className="form-error">{errors.topic}</p>}
               </div>
 
+            </div>
+
+            <div className="form-card form-card--optional">
+              <h2 className="form-card__title">
+                Дополнительно
+                <span className="form-card__optional-tag">(необязательно)</span>
+              </h2>
+
               <div className="form-group">
                 <label className="form-label">Преподаватель</label>
                 <input
                   className="form-input"
-                  placeholder="ФИО преподавателя (если известно)"
+                  placeholder="ФИО преподавателя"
                   value={form.teacher}
                   onChange={(e) => set('teacher', e.target.value)}
                 />
               </div>
+
+              <div className="form-group">
+                <label className="form-label">Кафедра</label>
+                <input
+                  className="form-input"
+                  placeholder="Например: Кафедра экономики"
+                  value={form.department}
+                  onChange={(e) => set('department', e.target.value)}
+                />
+              </div>
             </div>
 
-            <button className="btn btn--primary" onClick={nextStep}>
-              Далее →
+            <button className="form-btn-next" onClick={nextStep}>
+              Далее
             </button>
           </>
         )}
@@ -357,14 +381,14 @@ export default function NewOrder() {
                 style={{ flex: 1 }}
                 onClick={() => setStep(1)}
               >
-                ← Назад
+                Назад
               </button>
               <button
-                className="btn btn--primary"
+                className="form-btn-next"
                 style={{ flex: 2 }}
                 onClick={nextStep}
               >
-                Далее →
+                Далее
               </button>
             </div>
           </>
@@ -374,36 +398,85 @@ export default function NewOrder() {
         {step === 3 && (
           <>
             <div className="order-summary">
-              <h2 className="order-summary__title">📋 Итого по заявке</h2>
-
+              <div className="summary-header-row">
+                <span className="summary-header-row__icon">✅</span>
+                <div>
+                  <span className="summary-header-row__title">Почти готово!</span>
+                  <span className="summary-header-row__sub">Проверьте данные</span>
+                </div>
+              </div>
               <div className="summary-row">
                 <span className="summary-row__label">Тип работы</span>
                 <span className="summary-row__value">{selectedType?.label ?? '—'}</span>
               </div>
-              <div className="summary-divider" />
 
               <div className="summary-row">
                 <span className="summary-row__label">Дисциплина</span>
                 <span className="summary-row__value">{form.subject || '—'}</span>
               </div>
-              <div className="summary-divider" />
 
               <div className="summary-row">
                 <span className="summary-row__label">Тема</span>
                 <span className="summary-row__value">{form.topic || '—'}</span>
               </div>
-              <div className="summary-divider" />
+
+              <div className="summary-row">
+                <span className="summary-row__label">Срочность</span>
+                <span className="summary-row__value">
+                  {URGENCY.find(u => u.id === form.urgency)?.label ?? '—'}
+                </span>
+              </div>
+
+              {form.deadline && (
+                <div className="summary-row">
+                  <span className="summary-row__label">Дедлайн</span>
+                  <span className="summary-row__value">
+                    {new Date(form.deadline).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+
+              {form.antiplagiat && form.antiplagiat !== 'discuss' && (
+                <div className="summary-row">
+                  <span className="summary-row__label">Антиплагиат</span>
+                  <span className="summary-row__value">≥ {form.antiplagiat}%</span>
+                </div>
+              )}
+
+              {form.teacher && (
+                <div className="summary-row">
+                  <span className="summary-row__label">Преподаватель</span>
+                  <span className="summary-row__value">{form.teacher}</span>
+                </div>
+              )}
+
+              {form.department && (
+                <div className="summary-row">
+                  <span className="summary-row__label">Кафедра</span>
+                  <span className="summary-row__value">{form.department}</span>
+                </div>
+              )}
 
               <div className="summary-row">
                 <span className="summary-row__label">Файлы</span>
-                <span className="summary-row__value">{form.attachments.length} прикреплено</span>
+                <span className="summary-row__value">
+                  {form.attachments.length > 0
+                    ? `${form.attachments.length} прикреплено`
+                    : 'Нет'}
+                </span>
               </div>
-              <div className="summary-divider" />
 
               <div className="summary-row summary-row--total">
                 <span className="summary-row__label">Цена</span>
                 <span className="summary-row__value">По договорённости</span>
               </div>
+            </div>
+
+            <div className="form-notice">
+              <span className="form-notice__icon">💬</span>
+              <span className="form-notice__text">
+                После отправки мы подберём исполнителя и свяжемся с вами в боте. Обычно это занимает до 30 минут.
+              </span>
             </div>
 
             <div style={{ display: 'flex', gap: 10 }}>
@@ -412,15 +485,15 @@ export default function NewOrder() {
                 style={{ flex: 1 }}
                 onClick={() => setStep(2)}
               >
-                ← Назад
+                Назад
               </button>
               <button
-                className="btn btn--green"
+                className="form-btn-next"
                 style={{ flex: 2 }}
                 onClick={submit}
                 disabled={submitting || uploading}
               >
-                {submitting ? '⏳ Отправка...' : '🚀 Отправить заявку'}
+                {submitting ? 'Отправка...' : 'Отправить заявку'}
               </button>
             </div>
           </>
