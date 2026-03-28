@@ -31,6 +31,12 @@ services:
       - DB_NAME=${DB_NAME:-ngueu_db}
       - BOT_TOKEN=${BOT_TOKEN}
       - ADMIN_IDS=${ADMIN_IDS}
+      - MINIAPP_URL=${MINIAPP_URL:-https://olddiamond.online}
+      - PAYMENT_PROVIDER=${PAYMENT_PROVIDER:-mock}
+      - PAYMENT_SHOP_ID=${PAYMENT_SHOP_ID:-}
+      - PAYMENT_SECRET_KEY=${PAYMENT_SECRET_KEY:-}
+      - PAYMENT_RETURN_URL=${PAYMENT_RETURN_URL:-https://olddiamond.online/orders}
+      - PAYMENT_WEBHOOK_SECRET=${PAYMENT_WEBHOOK_SECRET:-}
     volumes:
       # Пробрасываем папку с загрузками, чтобы файлы не удалялись при перезапуске
       - ./backend/static/uploads:/app/backend/static/uploads
@@ -53,6 +59,12 @@ services:
       - DB_NAME=${DB_NAME:-ngueu_db}
       - BOT_TOKEN=${BOT_TOKEN}
       - ADMIN_IDS=${ADMIN_IDS}
+      - MINIAPP_URL=${MINIAPP_URL:-https://olddiamond.online}
+      - PAYMENT_PROVIDER=${PAYMENT_PROVIDER:-mock}
+      - PAYMENT_SHOP_ID=${PAYMENT_SHOP_ID:-}
+      - PAYMENT_SECRET_KEY=${PAYMENT_SECRET_KEY:-}
+      - PAYMENT_RETURN_URL=${PAYMENT_RETURN_URL:-https://olddiamond.online/orders}
+      - PAYMENT_WEBHOOK_SECRET=${PAYMENT_WEBHOOK_SECRET:-}
 
   # 4. React (Фронтенд + Nginx)
   frontend:

@@ -1,9 +1,11 @@
+from decimal import Decimal
 from aiogram import Router, types, F
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import StateFilter
 from keyboards.client import get_client_back
 from services.db_service import OrderService, UserService
+from services.payment_service import PaymentService
 from db.models import OrderStatus
 import logging
 
@@ -71,6 +73,7 @@ async def show_executor_order_detail(query: CallbackQuery):
 
     btns = []
     if order.status == OrderStatus.assigned:
+        btns.append([InlineKeyboardButton(text="💰 Назначить цену", callback_data=f"exec_set_price_{order.id}")])
         btns.append([InlineKeyboardButton(text="✅ Принять в работу", callback_data=f"exec_accept_{order.id}")])
     elif order.status == OrderStatus.in_progress:
         btns.append([InlineKeyboardButton(text="📤 Сдать работу", callback_data=f"exec_submit_{order.id}")])
@@ -184,3 +187,82 @@ async def handle_executor_file(message: Message, state: FSMContext):
         await state.clear()
     else:
         await message.answer("❌ Ошибка при сохранении.")
+
+
+# ── Назначение цены ───────────────────────────────────────────
+
+@router.callback_query(F.data.startswith("exec_set_price_"))
+async def start_set_price(query: CallbackQuery, state: FSMContext):
+    """Начало процесса назначения цены."""
+    order_id = int(query.data.split("_")[-1])
+
+    markup = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="❌ Отмена", callback_data=f"exec_order_{order_id}")]
+    ])
+
+    await query.message.edit_caption(
+        caption=(
+            f"💰 <b>Назначение цены для заказа #{order_id}</b>\n\n"
+            "Введите стоимость работы в рублях (только число).\n"
+            "Например: <code>5000</code>\n\n"
+            f"Комиссия платформы: 10%\n"
+            "<i>Если передумали — нажмите кнопку ниже.</i>"
+        ),
+        reply_markup=markup,
+        parse_mode="HTML"
+    )
+    await state.update_data(pricing_order_id=order_id)
+    await state.set_state("waiting_price_input")
+    await query.answer()
+
+
+@router.message(F.text, StateFilter("waiting_price_input"))
+async def handle_price_input(message: Message, state: FSMContext):
+    """Приём введённой цены от исполнителя."""
+    data = await state.get_data()
+    order_id = data.get("pricing_order_id")
+
+    if not order_id:
+        await message.answer("Ошибка: заказ не найден.")
+        await state.clear()
+        return
+
+    # Валидация ввода
+    price_text = message.text.strip().replace(" ", "").replace(",", ".")
+    try:
+        price = Decimal(price_text)
+        if price <= 0:
+            raise ValueError
+    except (ValueError, Exception):
+        await message.answer(
+            "❌ Некорректная сумма. Введите положительное число, например: <code>5000</code>",
+            parse_mode="HTML"
+        )
+        return
+
+    try:
+        order = await PaymentService.set_price(order_id, price)
+
+        commission = float(order.commission_amount or 0)
+        executor_amount = float(order.executor_amount or 0)
+
+        markup = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🏠 В кабинет исполнителя", callback_data="executor_dashboard")]
+        ])
+        await message.answer(
+            f"✅ <b>Цена заказа #{order_id} установлена!</b>\n\n"
+            f"💰 Стоимость: {float(price):.0f} ₽\n"
+            f"📊 Комиссия платформы: {commission:.0f} ₽\n"
+            f"💵 Ваш доход: {executor_amount:.0f} ₽\n\n"
+            f"Клиент получил уведомление об оплате.",
+            reply_markup=markup,
+            parse_mode="HTML"
+        )
+        await state.clear()
+    except ValueError as e:
+        await message.answer(f"❌ {str(e)}")
+        await state.clear()
+    except Exception as e:
+        logger.error(f"Ошибка назначения цены: {e}")
+        await message.answer("❌ Произошла ошибка. Попробуйте позже.")
+        await state.clear()

@@ -1,11 +1,11 @@
 import { NavLink } from 'react-router-dom'
 
 const NAV_ITEMS = [
-  { to: '/', icon: '🏠', label: 'Главная', exact: true },
-  { to: '/orders', icon: '📋', label: 'Заявки' },
-  { to: '/new-order', icon: '➕', label: 'Заказать' },
-  { to: '/faq', icon: '💬', label: 'FAQ' },
-  { to: '/profile', icon: '👤', label: 'Профиль' },
+  { to: '/', icon: '/images/nav/home.svg', label: 'Главная', exact: true },
+  { to: '/orders', icon: '/images/nav/document.svg', label: 'Заявки' },
+  { to: '/new-order', icon: '/images/nav/add.svg', label: 'Заказать' },
+  { to: '/faq', icon: '/images/nav/comment-info.svg', label: 'FAQ' },
+  { to: '/profile', icon: '/images/nav/user.svg', label: 'Профиль' },
 ]
 
 export default function BottomNav() {
@@ -21,8 +21,9 @@ export default function BottomNav() {
               `bottom-nav__item${isActive ? ' active' : ''}`
             }
           >
-            <span className="bottom-nav__icon">{icon}</span>
-            <span className="bottom-nav__label">{label}</span>
+            <div className="bottom-nav__icon-wrap">
+              <img src={icon} alt={label} className="bottom-nav__icon" />
+            </div>
           </NavLink>
         ))}
       </div>

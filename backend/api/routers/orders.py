@@ -2,7 +2,10 @@ import logging
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, status
 from api.schemas.order import OrderCreate
+from api.schemas.payment import OrderConfirm, OrderDispute
 from services.db_service import UserService, OrderService
+from services.payment_service import PaymentService
+from services.notification_service import NotificationService
 from main import bot # Импортируем глобальный экземпляр бота из точки входа бота
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
@@ -33,6 +36,12 @@ async def create_order(order_data: OrderCreate):
             await UserService.send_admin_alert(bot, order)
         except Exception as alert_err:
             logger.error(f"Ошибка при отправке алерта админам: {alert_err}")
+
+        # Создаём in-app уведомление для клиента
+        try:
+            await NotificationService.notify_order_created(order.client_id, order.id)
+        except Exception as notif_err:
+            logger.error(f"Ошибка создания уведомления: {notif_err}")
 
         return {"status": "success", "order_id": order.id}
     except Exception as e:
@@ -101,3 +110,31 @@ async def get_client_orders(client_id: int):
 @router.get("/latest/{client_id}")
 async def get_latest_orders(client_id: int):
     return await OrderService.get_client_orders(client_id, limit=3)
+
+@router.post("/{order_id}/confirm")
+async def confirm_order(order_id: int, data: OrderConfirm):
+    """Клиент подтверждает выполненную работу."""
+    try:
+        result = await PaymentService.confirm_order(order_id, data.user_id)
+        return result
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Ошибка подтверждения заказа {order_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{order_id}/dispute")
+async def dispute_order(order_id: int, data: OrderDispute):
+    """Клиент оспаривает работу."""
+    try:
+        result = await PaymentService.dispute_order(order_id, data.user_id, data.reason)
+        return result
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Ошибка оспаривания заказа {order_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

@@ -21,5 +21,7 @@
 @import './home/home.css';
 @import './home/order-form.css';
 @import './home/orders.css';
+@import './home/order-result.css';
 @import './home/faq.css';
 @import './home/profile.css';
+@import './home/notifications.css';

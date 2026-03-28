@@ -12,6 +12,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from config import TOKEN
 from handlers import common, client, executor, admin
+from services.scheduler_service import run_scheduler
 
 # Настройка логгера
 logging.basicConfig(level=logging.INFO)
@@ -38,6 +39,9 @@ async def main():
         dp.include_router(client.router)
         dp.include_router(executor.router)
         dp.include_router(admin.router)
+
+        # Запускаем планировщик фоновых задач
+        asyncio.create_task(run_scheduler())
 
         logger.info("Бот запущен.")
         await dp.start_polling(bot, skip_updates=True)

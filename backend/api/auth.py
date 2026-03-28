@@ -30,7 +30,7 @@ def verify_telegram_webapp_data(init_data: str) -> bool:
 
 async def check_tg_auth(request: Request):
     # Пропускаем проверку для технических путей
-    if request.url.path in ["/api/health", "/docs", "/openapi.json", "/favicon.ico"] or request.url.path.startswith("/static"):
+    if request.url.path in ["/api/health", "/api/payments/webhook", "/docs", "/openapi.json", "/favicon.ico"] or request.url.path.startswith("/static"):
         return
 
     init_data = request.headers.get("X-TG-Init-Data")

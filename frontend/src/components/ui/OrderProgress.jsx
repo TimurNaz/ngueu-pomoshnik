@@ -1,38 +1,53 @@
 /**
- * OrderProgress — визуальный прогресс-бар по 4 этапам заявки.
- * @param {number} currentStep — 0..3 (0 = новая, 1 = исполнитель назначен, 2 = в работе, 3 = выполнена)
+ * OrderProgress — визуальный прогресс-бар по этапам заявки.
+ * Поддерживает два режима: по номеру шага (step) или по статусу заказа (status).
  */
 const STEPS = [
-  { label: 'Заявка принята', icon: '📥' },
-  { label: 'Исполнитель назначен', icon: '👤' },
+  { label: 'Заявка', icon: '📥' },
+  { label: 'Цена', icon: '💰' },
+  { label: 'Оплата', icon: '💳' },
   { label: 'В работе', icon: '⚙️' },
-  { label: 'Выполнено', icon: '✅' },
+  { label: 'Проверка', icon: '📋' },
+  { label: 'Готово', icon: '✅' },
 ]
 
-export default function OrderProgress({ currentStep = 0 }) {
-  // Ширина заполненной линии в процентах
-  const lineWidth = currentStep === 0 ? 0 : `${(currentStep / (STEPS.length - 1)) * 100}%`
+const STATUS_TO_STEP = {
+  new: 0,
+  assigned: 0,
+  priced: 1,
+  paid: 2,
+  in_progress: 3,
+  review: 3,
+  done: 4,
+  confirming: 4,
+  completed: 5,
+  disputed: 4,
+  canceled: 0,
+}
+
+export default function OrderProgress({ currentStep, status }) {
+  const active = status ? (STATUS_TO_STEP[status] ?? 0) : (currentStep ?? 0)
+  const lineWidth = active === 0 ? 0 : `${(active / (STEPS.length - 1)) * 100}%`
 
   return (
     <div className="order-progress">
       <p className="order-progress__title">Статус заявки</p>
       <div className="order-progress__steps">
-        {/* Заполненная линия */}
         <div className="order-progress__line" style={{ width: lineWidth }} />
 
-        {STEPS.map((step, i) => {
-          const isDone = i < currentStep
-          const isActive = i === currentStep
+        {STEPS.map((s, i) => {
+          const isDone = i < active
+          const isActive = i === active
 
           return (
             <div
-              key={step.label}
+              key={s.label}
               className={`progress-step${isDone ? ' progress-step--done' : ''}${isActive ? ' progress-step--active' : ''}`}
             >
               <div className="progress-step__dot">
-                {isDone ? '✓' : step.icon}
+                {isDone ? '✓' : s.icon}
               </div>
-              <span className="progress-step__label">{step.label}</span>
+              <span className="progress-step__label">{s.label}</span>
             </div>
           )
         })}

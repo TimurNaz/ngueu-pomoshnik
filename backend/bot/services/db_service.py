@@ -25,6 +25,7 @@ from db.models import (
     BonusTransaction, BonusType,
     Referral, ReferralStatus,
     Review, HolidayBonus, HolidayTarget, KnowledgeBase,
+    Notification, NotificationType,
     LOYALTY_THRESHOLDS, CASHBACK_RATES,
     REGISTRATION_BONUS, REFERRAL_BONUS,
     COMMISSION_RATE, MAX_BONUS_RATIO,
@@ -357,3 +358,68 @@ class OrderService:
     @staticmethod
     async def get_by_id(order_id: int) -> Optional[Order]:
         async with async_session() as session: return await session.get(Order, order_id)
+
+
+class NotificationDBService:
+    """Сервис для работы с уведомлениями в БД."""
+
+    @staticmethod
+    async def create(user_id: int, notif_type: NotificationType, title: str, text: str, order_id: Optional[int] = None) -> Notification:
+        """Создаёт уведомление в БД."""
+        async with async_session() as session:
+            notif = Notification(
+                user_id=user_id,
+                type=notif_type,
+                title=title,
+                text=text,
+                order_id=order_id,
+            )
+            session.add(notif)
+            await session.commit()
+            await session.refresh(notif)
+            return notif
+
+    @staticmethod
+    async def get_user_notifications(user_id: int, limit: int = 50) -> list[Notification]:
+        """Получает уведомления пользователя."""
+        async with async_session() as session:
+            result = await session.execute(
+                select(Notification)
+                .where(Notification.user_id == user_id)
+                .order_by(Notification.created_at.desc())
+                .limit(limit)
+            )
+            return result.scalars().all()
+
+    @staticmethod
+    async def get_unread_count(user_id: int) -> int:
+        """Считает непрочитанные уведомления."""
+        async with async_session() as session:
+            result = await session.execute(
+                select(func.count(Notification.id))
+                .where(Notification.user_id == user_id, Notification.is_read == False)
+            )
+            return result.scalar() or 0
+
+    @staticmethod
+    async def mark_read(notification_id: int, user_id: int) -> bool:
+        """Помечает одно уведомление как прочитанное."""
+        async with async_session() as session:
+            notif = await session.get(Notification, notification_id)
+            if not notif or notif.user_id != user_id:
+                return False
+            notif.is_read = True
+            await session.commit()
+            return True
+
+    @staticmethod
+    async def mark_all_read(user_id: int) -> int:
+        """Помечает все уведомления пользователя как прочитанные. Возвращает кол-во обновлённых."""
+        async with async_session() as session:
+            result = await session.execute(
+                update(Notification)
+                .where(Notification.user_id == user_id, Notification.is_read == False)
+                .values(is_read=True)
+            )
+            await session.commit()
+            return result.rowcount

@@ -21,7 +21,7 @@ export default function Home() {
 
       try {
         const headers = getApiHeaders(initData);
-        
+
         // Загружаем профиль
         const profRes = await fetch(`${API_BASE_URL}/api/users/${userId}`, { headers });
         if (profRes.ok) {
@@ -41,12 +41,12 @@ export default function Home() {
         setLoading(false);
       }
     }
-    
+
     if (userId) {
-        fetchData();
+      fetchData();
     } else {
-        // Если мы не в Telegram, загрузка не закончится, пока не появится ID
-        setLoading(false);
+      // Если мы не в Telegram, загрузка не закончится, пока не появится ID
+      setLoading(false);
     }
   }, [userId, initData]);
 
@@ -66,11 +66,11 @@ export default function Home() {
   };
 
   if (!userId && !loading) {
-      return (
-        <div className="home" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh'}}>
-            <p>Авторизация Telegram...</p>
-        </div>
-      )
+    return (
+      <div className="home" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <p>Авторизация Telegram...</p>
+      </div>
+    )
   }
 
   return (
@@ -79,16 +79,21 @@ export default function Home() {
         {/* Приветствие */}
         <div className="greeting">
           <div className="greeting__info">
-            <p className="greeting__sup">Добро пожаловать 👋</p>
-            <h1 className="greeting__title">{displayName}</h1>
+            <h1 className="greeting__title">
+              Привет, <span className="greeting__name">{displayName}!</span>
+            </h1>
           </div>
           <div className="greeting__avatar">
-            {displayName[0]?.toUpperCase() ?? '👤'}
+            {user?.photo_url
+              ? <img src={user.photo_url} alt="" className="greeting__avatar-img" />
+              : displayName[0]?.toUpperCase() ?? '👤'
+            }
           </div>
         </div>
 
         {/* Бонусная карта */}
         <div className="bonus-card">
+          <img src="/images/mascot.png" alt="" className="bonus-card__mascot" />
           <div className="bonus-card__header">
             <div>
               <p className="bonus-card__label">Бонусные баллы</p>
@@ -150,11 +155,12 @@ export default function Home() {
               <span className="action-card__title">FAQ</span>
               <span className="action-card__sub">Ответы</span>
             </div>
+            <img src="/images/logo.png" alt="" className="action-card__watermark" />
           </button>
 
           <button
             className="action-card action-card--light"
-            onClick={() => window.open('https://t.me/ngueu_bot_support', '_blank')}
+            onClick={() => window.open('https://t.me/zachetlearning/13', '_blank')}
           >
             <span className="action-card__icon">🎧</span>
             <div className="action-card__content">
@@ -165,37 +171,47 @@ export default function Home() {
         </div>
 
         {/* Превью заявок */}
-        {!loading && latestOrders.length > 0 && (
-          <div className="orders-preview">
+        {!loading && (
+          <div className={`orders-preview${latestOrders.length === 0 ? ' orders-preview--empty' : ''}`}>
             <div className="orders-preview__header">
               <span className="orders-preview__title">Последние заявки</span>
-              <button
-                className="orders-preview__link"
-                onClick={() => handleAction('/orders')}
-              >
-                Все →
-              </button>
+              {latestOrders.length > 0 && (
+                <button
+                  className="orders-preview__link"
+                  onClick={() => handleAction('/orders')}
+                >
+                  Все →
+                </button>
+              )}
             </div>
 
-            {latestOrders.map((order) => (
-              <div
-                key={order.id}
-                className="order-row"
-                onClick={() => handleAction(`/orders/${order.id}`)}
-              >
-                <div className="order-row__icon">{getWorkIcon(order.work_type)}</div>
-                <div className="order-row__content">
-                  <p className="order-row__name">{order.subject}</p>
-                  <p className="order-row__meta">{new Date(order.created_at).toLocaleDateString()}</p>
+            {latestOrders.length > 0 ? (
+              latestOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className="order-row"
+                  onClick={() => handleAction(`/orders/${order.id}`)}
+                >
+                  <div className="order-row__icon">{getWorkIcon(order.work_type)}</div>
+                  <div className="order-row__content">
+                    <p className="order-row__name">{order.subject}</p>
+                    <p className="order-row__meta">{new Date(order.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <div className="order-row__right">
+                    <span className="order-row__price">
+                      {order.price ? `${Math.floor(order.price)} ₽` : 'Цена...'}
+                    </span>
+                    <StatusBadge status={order.status} />
+                  </div>
                 </div>
-                <div className="order-row__right">
-                  <span className="order-row__price">
-                    {order.price ? `${Math.floor(order.price)} ₽` : 'Цена...'}
-                  </span>
-                  <StatusBadge status={order.status} />
-                </div>
+              ))
+            ) : (
+              <div className="orders-preview__empty">
+                <span className="orders-preview__empty-icon">📭</span>
+                <p className="orders-preview__empty-text">Заявок пока нет</p>
+                <p className="orders-preview__empty-sub">Оформите первую заявку, и она появится здесь</p>
               </div>
-            ))}
+            )}
           </div>
         )}
 
@@ -205,25 +221,70 @@ export default function Home() {
             <span className="section-title">О сервисе</span>
           </div>
 
-          <div className="info-card" onClick={() => handleAction('/faq')}>
-            <div className="info-card__icon">❓</div>
+          <div
+            className="info-card info-card--yellow"
+            onClick={() => window.open('https://t.me/zachetlearning/2', '_blank')}
+          >
+            <div className="info-card__icon">⭐</div>
             <div className="info-card__content">
-              <p className="info-card__title">FAQ и ответы</p>
-              <p className="info-card__sub">Как работает сервис, гарантии, оплата</p>
+              <p className="info-card__title">Отзывы</p>
+              <p className="info-card__sub">Реальные отзывы студентов в Telegram</p>
             </div>
-            <span className="info-card__arrow">›</span>
+            <img src="/images/chevron-right.svg" alt="" className="info-card__arrow" />
           </div>
 
           <div
-            className="info-card"
-            onClick={() => window.open('https://t.me/ngueu_helper_bot', '_blank')}
+            className="info-card info-card--blue"
+            onClick={() => window.open('https://t.me/zachetlearning/3', '_blank')}
           >
             <div className="info-card__icon">📣</div>
             <div className="info-card__content">
               <p className="info-card__title">Новости и акции</p>
               <p className="info-card__sub">Следи за обновлениями в боте</p>
             </div>
-            <span className="info-card__arrow">›</span>
+            <img src="/images/chevron-right.svg" alt="" className="info-card__arrow" />
+          </div>
+
+          <div
+            className="info-card info-card--green"
+            onClick={() => window.open('https://t.me/zachetlearning/25', '_blank')}
+          >
+            <div className="info-card__icon">🤝</div>
+            <div className="info-card__content">
+              <p className="info-card__title">Сотрудничество</p>
+              <p className="info-card__sub">Стань исполнителем или партнёром</p>
+            </div>
+            <img src="/images/chevron-right.svg" alt="" className="info-card__arrow" />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="home-footer">
+          <img src="/images/nguey-logo.svg" alt="NGUEY" className="home-footer__logo" />
+          <div className="home-footer__body">
+            <div className="home-footer__buttons">
+              <a
+                className="home-footer__btn home-footer__btn--filled"
+                href="https://t.me/zachetlearning"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                TG
+              </a>
+              <a
+                className="home-footer__btn home-footer__btn--outline"
+                href="https://vk.com/ngueu_helper"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                VK
+              </a>
+            </div>
+            <div className="home-footer__info">
+              <p className="home-footer__email">Eduhelp@yandex.ru</p>
+              <p className="home-footer__copy">Copyright — Все права защищены</p>
+              <p className="home-footer__year">© 2025 НГУЭУ/Помощник</p>
+            </div>
           </div>
         </div>
       </div>

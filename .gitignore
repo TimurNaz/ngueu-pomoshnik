@@ -1,4 +1,7 @@
 .claude/
+.gemini/
+.venv/
+.vscode/
 venv/
 __pycache__/
 *.pyc

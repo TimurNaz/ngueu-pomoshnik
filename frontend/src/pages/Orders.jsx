@@ -7,12 +7,16 @@ import OrderProgress from '../components/ui/OrderProgress'
 
 const FILTERS = [
   { id: 'all', label: 'Все' },
-  { id: 'new', label: 'Новые' },
-  { id: 'assigned', label: 'Назначены' },
+  { id: 'active', label: 'Активные' },
+  { id: 'priced', label: 'К оплате' },
+  { id: 'paid', label: 'Оплачены' },
   { id: 'in_progress', label: 'В работе' },
-  { id: 'done', label: 'Выполнены' },
+  { id: 'confirming', label: 'Проверка' },
+  { id: 'completed', label: 'Завершены' },
   { id: 'canceled', label: 'Отменены' },
 ]
+
+const ACTIVE_STATUSES = ['new', 'assigned', 'priced', 'paid', 'in_progress', 'review', 'done', 'confirming', 'disputed']
 
 export default function Orders() {
   const [orders, setOrders] = useState([])
@@ -51,7 +55,9 @@ export default function Orders() {
   const filtered =
     activeFilter === 'all'
       ? orders
-      : orders.filter((o) => o.status === activeFilter)
+      : activeFilter === 'active'
+        ? orders.filter((o) => ACTIVE_STATUSES.includes(o.status))
+        : orders.filter((o) => o.status === activeFilter)
 
   if (!userId && !loading) return <div className="orders-page" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh'}}><p>Авторизация Telegram...</p></div>
   if (loading) {
@@ -66,6 +72,16 @@ export default function Orders() {
   return (
     <div className="orders-page">
       <div className="orders-page__container">
+        {/* Заголовок */}
+        <div>
+          <h1 className="orders-page__title">Мои заявки</h1>
+          {orders.length > 0 && (
+            <p className="orders-page__count">
+              {orders.length} {orders.length === 1 ? 'заявка' : orders.length < 5 ? 'заявки' : 'заявок'}
+            </p>
+          )}
+        </div>
+
         {/* Фильтры */}
         <div className="orders-filters">
           {FILTERS.map((f) => (
@@ -88,11 +104,11 @@ export default function Orders() {
               В этой категории пока нет заявок. Оформите первую!
             </p>
             <button
-              className="btn btn--primary"
+              className="btn btn--green orders-page__cta"
               style={{ marginTop: 8 }}
               onClick={() => navigate('/new-order')}
             >
-              📝 Новая заявка
+              Оформить заявку
             </button>
           </div>
         ) : (
@@ -120,9 +136,9 @@ export default function Orders() {
                 )}
               </div>
 
-              {order.status === 'in_progress' && (
+              {!['new', 'canceled', 'completed'].includes(order.status) && (
                 <div className="order-card__progress">
-                  <OrderProgress currentStep={order.step} />
+                  <OrderProgress status={order.status} />
                 </div>
               )}
 
@@ -130,7 +146,7 @@ export default function Orders() {
                 <span className="order-card__price">
                   {order.price ? `${order.price} ₽` : 'Цена уточняется'}
                 </span>
-                <span style={{ color: 'var(--text-muted)', fontSize: 20 }}>›</span>
+                <img src="/images/chevron-right.svg" alt="" style={{ width: 24, height: 24 }} />
               </div>
             </div>
           ))
@@ -138,11 +154,11 @@ export default function Orders() {
 
         {filtered.length > 0 && (
           <button
-            className="btn btn--green"
+            className="btn btn--green orders-page__cta"
             style={{marginTop: 20}}
             onClick={() => navigate('/new-order')}
           >
-            📝 Оформить новую заявку
+            Оформить новую заявку
           </button>
         )}
       </div>

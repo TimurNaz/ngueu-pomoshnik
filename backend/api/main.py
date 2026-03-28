@@ -13,7 +13,7 @@ sys.path.append(str(BACKEND_DIR))
 sys.path.append(str(BACKEND_DIR / "bot"))
 
 from api.auth import check_tg_auth
-from api.routers import users, orders, system
+from api.routers import users, orders, system, notifications, payments
 from api.utils.logging import StructuredLoggingMiddleware
 
 # Настройка логирования
@@ -47,6 +47,8 @@ app.mount("/static", StaticFiles(directory="backend/static"), name="static")
 app.include_router(system.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(orders.router, prefix="/api")
+app.include_router(notifications.router, prefix="/api")
+app.include_router(payments.router, prefix="/api")
 
 if __name__ == "__main__":
     import uvicorn

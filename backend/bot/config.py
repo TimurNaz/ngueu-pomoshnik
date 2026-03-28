@@ -43,3 +43,10 @@ REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 # ── MiniApp (frontend) ────────────────────────────────────────
 # URL главной страницы MiniApp. Должен быть HTTPS.
 MINIAPP_URL: str = os.getenv("MINIAPP_URL", "https://olddiamond.online")
+
+# ── Payments ─────────────────────────────────────────────
+PAYMENT_PROVIDER: str = os.getenv("PAYMENT_PROVIDER", "mock")
+PAYMENT_SHOP_ID: str = os.getenv("PAYMENT_SHOP_ID", "")
+PAYMENT_SECRET_KEY: str = os.getenv("PAYMENT_SECRET_KEY", "")
+PAYMENT_RETURN_URL: str = os.getenv("PAYMENT_RETURN_URL", f"{MINIAPP_URL}/orders")
+PAYMENT_WEBHOOK_SECRET: str = os.getenv("PAYMENT_WEBHOOK_SECRET", "")
